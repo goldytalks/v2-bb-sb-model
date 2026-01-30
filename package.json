@@ -1,0 +1,38 @@
+{
+  "name": "v2-bb-sb-model",
+  "version": "2.0.0",
+  "description": "Bad Bunny Super Bowl LX Halftime Prediction Model - Source of Truth",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "update-model": "tsx scripts/update-model.ts",
+    "seed": "tsx scripts/seed-data.ts"
+  },
+  "dependencies": {
+    "next": "14.1.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "groq-sdk": "^0.3.0",
+    "zustand": "^4.5.0",
+    "swr": "^2.2.0",
+    "framer-motion": "^11.0.0",
+    "date-fns": "^3.3.0",
+    "lucide-react": "^0.312.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "autoprefixer": "^10.4.17",
+    "postcss": "^8.4.33",
+    "tailwindcss": "^3.4.1",
+    "typescript": "^5.3.3",
+    "tsx": "^4.7.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

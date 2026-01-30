@@ -1,0 +1,426 @@
+{
+  "meta": {
+    "version": "2.0.0",
+    "lastUpdated": "2026-01-30T12:00:00Z",
+    "lastCalibration": "2026-01-30T12:00:00Z",
+    "dataSourcesUpdated": {
+      "streaming": "2026-01-30",
+      "concerts": "2026-01-30",
+      "markets": "2026-01-30"
+    },
+    "confidence": 0.72,
+    "event": {
+      "name": "Super Bowl LX Halftime Show",
+      "date": "2026-02-08",
+      "venue": "Caesars Superdome",
+      "city": "New Orleans",
+      "performer": "Bad Bunny",
+      "estimatedRuntimeMinutes": 13.5
+    }
+  },
+
+  "firstSong": {
+    "predictions": [
+      {
+        "rank": 1,
+        "song": "Tití Me Preguntó",
+        "album": "Un Verano Sin Ti",
+        "probability": 0.28,
+        "confidence": "high",
+        "reasoning": "Proven Coachella 2023 opener over tour single; 1.89B streams; instant stadium-wide singalong trigger; matches Super Bowl pattern (73% open with top-5 recognizable song)",
+        "factors": {
+          "streaming": 90,
+          "concert": 95,
+          "sbSuitability": 90,
+          "cultural": 85,
+          "albumPush": 40
+        }
+      },
+      {
+        "rank": 2,
+        "song": "NuevaYol",
+        "album": "DeBÍ TiRAR MáS FOToS",
+        "probability": 0.20,
+        "confidence": "medium",
+        "reasoning": "Cultural statement (Puerto Rican flag video); current album; but NOT in top-20 all-time streams; no stadium opener track record",
+        "factors": {
+          "streaming": 70,
+          "concert": 80,
+          "sbSuitability": 90,
+          "cultural": 90,
+          "albumPush": 100
+        }
+      },
+      {
+        "rank": 3,
+        "song": "El Clúb",
+        "album": "DeBÍ TiRAR MáS FOToS",
+        "probability": 0.16,
+        "confidence": "medium",
+        "reasoning": "Lead single from current album; house/EDM production translates to stadium; clean; political undertones",
+        "factors": {
+          "streaming": 65,
+          "concert": 75,
+          "sbSuitability": 85,
+          "cultural": 75,
+          "albumPush": 100
+        }
+      },
+      {
+        "rank": 4,
+        "song": "MONACO",
+        "album": "Nadie Sabe Lo Que Va a Pasar Mañana",
+        "probability": 0.14,
+        "confidence": "medium",
+        "reasoning": "High energy; broadcast-clean; #5 Hot 100 peak; but lacks historic weight for this moment",
+        "factors": {
+          "streaming": 65,
+          "concert": 85,
+          "sbSuitability": 80,
+          "cultural": 60,
+          "albumPush": 60
+        }
+      },
+      {
+        "rank": 5,
+        "song": "DtMF",
+        "album": "DeBÍ TiRAR MáS FOToS",
+        "probability": 0.12,
+        "confidence": "medium",
+        "reasoning": "Biggest current hit (#2 Hot 100); historic Grammy nominations (ROTY/SOTY/AOTY); but emotional mid-tempo—atypical opener energy",
+        "factors": {
+          "streaming": 80,
+          "concert": 85,
+          "sbSuitability": 90,
+          "cultural": 95,
+          "albumPush": 100
+        }
+      }
+    ],
+    "marketInefficiency": {
+      "mostOverpriced": {
+        "song": "NuevaYol",
+        "ourProbability": 0.20,
+        "marketProbability": 0.56,
+        "platform": "Kalshi",
+        "edge": -0.36,
+        "recommendation": "SELL",
+        "confidence": "very_high"
+      },
+      "mostUnderpriced": {
+        "song": "Tití Me Preguntó",
+        "ourProbability": 0.28,
+        "marketProbability": 0.167,
+        "platform": "FanDuel",
+        "edge": 0.113,
+        "recommendation": "BUY",
+        "confidence": "high"
+      }
+    }
+  },
+
+  "lastSong": {
+    "predictions": [
+      {
+        "rank": 1,
+        "song": "BAILE INoLVIDABLE",
+        "album": "DeBÍ TiRAR MáS FOToS",
+        "probability": 0.65,
+        "confidence": "very_high",
+        "reasoning": "Featured in Apple Music trailer; 2025 Latin Grammy wins; 6-minute salsa structure built for finale; closed Puerto Rico residency",
+        "factors": {
+          "streaming": 75,
+          "concert": 90,
+          "sbSuitability": 100,
+          "cultural": 95,
+          "albumPush": 100
+        }
+      },
+      {
+        "rank": 2,
+        "song": "DtMF",
+        "album": "DeBÍ TiRAR MáS FOToS",
+        "probability": 0.15,
+        "confidence": "medium",
+        "reasoning": "Emotional anchor; Grammy positioning; but trailer evidence points to BAILE",
+        "factors": {
+          "streaming": 80,
+          "concert": 85,
+          "sbSuitability": 90,
+          "cultural": 95,
+          "albumPush": 100
+        }
+      },
+      {
+        "rank": 3,
+        "song": "DÁKITI",
+        "album": "El Último Tour Del Mundo",
+        "probability": 0.12,
+        "confidence": "medium",
+        "reasoning": "#1 all-time streams; traditional concert closer; but new album promotional logic likely supersedes",
+        "factors": {
+          "streaming": 100,
+          "concert": 85,
+          "sbSuitability": 100,
+          "cultural": 75,
+          "albumPush": 20
+        }
+      }
+    ]
+  },
+
+  "setlist": {
+    "primary": [
+      {
+        "position": 1,
+        "song": "Tití Me Preguntó",
+        "album": "Un Verano Sin Ti",
+        "runtime": "1:30",
+        "guest": null,
+        "function": "opener",
+        "inclusionProbability": 0.75
+      },
+      {
+        "position": 2,
+        "song": "NuevaYol",
+        "album": "DeBÍ TiRAR MáS FOToS",
+        "runtime": "1:30",
+        "guest": null,
+        "function": "cultural_statement",
+        "inclusionProbability": 0.70
+      },
+      {
+        "position": 3,
+        "song": "Me Porto Bonito",
+        "album": "Un Verano Sin Ti",
+        "runtime": "1:30",
+        "guest": "Chencho Corleone",
+        "function": "hit_medley",
+        "inclusionProbability": 0.85
+      },
+      {
+        "position": 4,
+        "song": "I Like It",
+        "album": "Invasion of Privacy",
+        "runtime": "1:30",
+        "guest": "Cardi B",
+        "function": "guest_feature",
+        "inclusionProbability": 0.70
+      },
+      {
+        "position": 5,
+        "song": "Yo Perreo Sola",
+        "album": "YHLQMDLG",
+        "runtime": "1:30",
+        "guest": null,
+        "function": "cultural_statement",
+        "inclusionProbability": 0.85
+      },
+      {
+        "position": 6,
+        "song": "DtMF",
+        "album": "DeBÍ TiRAR MáS FOToS",
+        "runtime": "2:00",
+        "guest": null,
+        "function": "emotional_peak",
+        "inclusionProbability": 0.80
+      },
+      {
+        "position": 7,
+        "song": "DÁKITI",
+        "album": "El Último Tour Del Mundo",
+        "runtime": "1:30",
+        "guest": null,
+        "function": "climax",
+        "inclusionProbability": 0.95
+      },
+      {
+        "position": 8,
+        "song": "BAILE INoLVIDABLE",
+        "album": "DeBÍ TiRAR MáS FOToS",
+        "runtime": "2:00",
+        "guest": null,
+        "function": "closer",
+        "inclusionProbability": 0.90
+      }
+    ],
+    "alternate": {
+      "scenario": "Statement-First Opening",
+      "trigger": "Bad Bunny prioritizes cultural statement over recognition",
+      "changes": [
+        { "position": 1, "from": "Tití Me Preguntó", "to": "NuevaYol" },
+        { "position": 2, "from": "NuevaYol", "to": "El Apagón" }
+      ]
+    },
+    "songTiers": {
+      "locks": ["DÁKITI", "BAILE INoLVIDABLE"],
+      "veryLikely": ["Me Porto Bonito", "Yo Perreo Sola", "DtMF"],
+      "likely": ["Tití Me Preguntó", "NuevaYol"],
+      "possible": ["I Like It", "MONACO", "El Apagón"],
+      "unlikely": ["Safaera", "Ojitos Lindos", "Yonaguni", "Callaíta"]
+    }
+  },
+
+  "guests": [
+    {
+      "name": "Cardi B",
+      "probability": 0.75,
+      "associatedSong": "I Like It",
+      "marketOdds": {
+        "platform": "FanDuel",
+        "americanOdds": "-250",
+        "impliedProbability": 0.714
+      },
+      "reasoning": "His only #1 hit; she's box office; cross-cultural appeal; prior Super Bowl experience"
+    },
+    {
+      "name": "Chencho Corleone",
+      "probability": 0.65,
+      "associatedSong": "Me Porto Bonito",
+      "marketOdds": null,
+      "reasoning": "Easy add; already tours with BB; original feature; no scheduling conflicts"
+    },
+    {
+      "name": "J Balvin",
+      "probability": 0.45,
+      "associatedSong": "I Like It",
+      "marketOdds": {
+        "platform": "FanDuel",
+        "americanOdds": "-160",
+        "impliedProbability": 0.615
+      },
+      "reasoning": "I Like It connection; prior Super Bowl 2020; scheduling uncertain"
+    },
+    {
+      "name": "Jennifer Lopez",
+      "probability": 0.30,
+      "associatedSong": null,
+      "marketOdds": {
+        "platform": "FanDuel",
+        "americanOdds": "-125",
+        "impliedProbability": 0.556
+      },
+      "reasoning": "Puerto Rican connection; 2020 SB precedent; but not an active collaborator"
+    },
+    {
+      "name": "Daddy Yankee",
+      "probability": 0.25,
+      "associatedSong": "La Santa",
+      "marketOdds": {
+        "platform": "FanDuel",
+        "americanOdds": "+190",
+        "impliedProbability": 0.345
+      },
+      "reasoning": "La Santa requires him; but he's 'retired'; scheduling risk"
+    },
+    {
+      "name": "Drake",
+      "probability": 0.05,
+      "associatedSong": "MÍA",
+      "marketOdds": {
+        "platform": "FanDuel",
+        "americanOdds": "+1200",
+        "impliedProbability": 0.077
+      },
+      "reasoning": "MÍA exists; but no recent relationship; very low probability"
+    }
+  ],
+
+  "marketPositions": {
+    "highConviction": [
+      {
+        "song": "NuevaYol",
+        "ourProbability": 0.20,
+        "marketProbability": 0.56,
+        "platform": "Kalshi",
+        "edge": -0.36,
+        "recommendation": "SELL",
+        "confidence": "very_high"
+      },
+      {
+        "song": "BAILE INoLVIDABLE",
+        "ourProbability": 0.65,
+        "marketProbability": 0.091,
+        "platform": "FanDuel",
+        "edge": 0.559,
+        "recommendation": "BUY",
+        "confidence": "very_high"
+      },
+      {
+        "song": "Tití Me Preguntó",
+        "ourProbability": 0.28,
+        "marketProbability": 0.167,
+        "platform": "FanDuel",
+        "edge": 0.113,
+        "recommendation": "BUY",
+        "confidence": "high"
+      }
+    ],
+    "valuePlays": [
+      {
+        "song": "DtMF",
+        "ourProbability": 0.12,
+        "marketProbability": 0.118,
+        "platform": "FanDuel",
+        "edge": 0.002,
+        "recommendation": "HOLD",
+        "confidence": "low"
+      },
+      {
+        "song": "ALAMBRE PuA",
+        "ourProbability": 0.03,
+        "marketProbability": 0.227,
+        "platform": "FanDuel",
+        "edge": -0.197,
+        "recommendation": "FADE",
+        "confidence": "high"
+      },
+      {
+        "song": "La MuDANZA",
+        "ourProbability": 0.05,
+        "marketProbability": 0.189,
+        "platform": "FanDuel",
+        "edge": -0.139,
+        "recommendation": "FADE",
+        "confidence": "high"
+      }
+    ],
+    "arbitrage": {
+      "opportunity": "NuevaYol Cross-Platform",
+      "kalshiImplied": 0.56,
+      "otherImplied": 0.133,
+      "spread": 0.427,
+      "recommendation": "Sell Kalshi YES - model suggests fair value is 20%"
+    }
+  },
+
+  "intelligence": [],
+
+  "updateLog": [
+    {
+      "date": "2026-01-30",
+      "version": "2.0.0",
+      "changes": "Initial v2 model with original probability calculations",
+      "author": "model_engine"
+    }
+  ],
+
+  "methodology": {
+    "description": "Probabilities generated from first principles using weighted factor model",
+    "weights": {
+      "streaming": 0.20,
+      "concert": 0.15,
+      "sbSuitability": 0.25,
+      "cultural": 0.20,
+      "albumPush": 0.20
+    },
+    "dataSources": [
+      "Spotify streaming data (82.7M monthly listeners, 112B career streams)",
+      "setlist.fm (127+ documented shows)",
+      "Super Bowl halftime archives 2002-2024",
+      "Billboard chart history",
+      "Latin Grammy / Grammy awards data"
+    ],
+    "marketUsage": "Markets (Kalshi, Polymarket, FanDuel) are used ONLY for edge calculation, never as probability input"
+  }
+}
