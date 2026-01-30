@@ -5,7 +5,7 @@
  * Markets are NEVER used as input - only for comparison.
  */
 
-import type { PredictionModel, SongPrediction, EdgeCalculation, MarketOdds } from '@/types';
+import type { PredictionModel, SongPrediction, EdgeCalculation, MarketOdds, GuestPrediction } from '@/types';
 import predictionsData from '@/data/predictions.json';
 
 // ============================================================================
@@ -273,19 +273,19 @@ export function getLastSongPredictions(): SongPrediction[] {
   return getModel().lastSong.predictions;
 }
 
-export function getSetlist(): typeof predictionsData.setlist {
+export function getSetlist(): PredictionModel['setlist'] {
   return getModel().setlist;
 }
 
-export function getGuests(): typeof predictionsData.guests {
+export function getGuests(): GuestPrediction[] {
   return getModel().guests;
 }
 
-export function getMarketPositions(): typeof predictionsData.marketPositions {
+export function getMarketPositions(): PredictionModel['marketPositions'] {
   return getModel().marketPositions;
 }
 
-export function getModelMeta(): typeof predictionsData.meta {
+export function getModelMeta(): PredictionModel['meta'] {
   return getModel().meta;
 }
 
