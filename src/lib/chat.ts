@@ -29,7 +29,7 @@ You answer questions about our prediction model for Bad Bunny's Super Bowl LX ha
 
 ## Key Principles
 1. OUR MODEL is the source of truth - we generate original probabilities
-2. Market data (Kalshi, Polymarket, FanDuel) is used ONLY for comparison
+2. Market data (Kalshi, Polymarket) is used ONLY for comparison
 3. We NEVER adjust our probabilities based on market movements
 4. Edge = Our Probability - Market Probability
 
@@ -64,7 +64,7 @@ Our probabilities are calculated using a weighted factor model:
 ## Response Guidelines
 - Be concise and direct
 - Always cite specific probabilities from our model
-- When discussing edges, clarify that positive = underpriced (BUY) and negative = overpriced (SELL)
+- When discussing edges, clarify that positive = underpriced (BUY YES) and negative = overpriced (BUY NO)
 - If asked about methodology, explain our factor-based approach
 - If asked about market data, clarify it's for comparison only
 - Use uppercase for song titles
@@ -176,9 +176,9 @@ Most likely: **Cardi B** (75%) for "I Like It" - his only #1 hit.`,
 ${positions.map(p => `**${p.recommendation} ${p.song}** on ${p.platform}
   Market: ${(p.marketProbability * 100).toFixed(0)}% | Ours: ${(p.ourProbability * 100).toFixed(0)}% | Edge: ${p.edge > 0 ? '+' : ''}${(p.edge * 100).toFixed(0)}%`).join('\n\n')}
 
-Biggest edge: **SELL NuevaYol on Kalshi** (-36% edge)
+Biggest edge: **BUY NO NuevaYol on Kalshi** (-36% edge)
 The market has NuevaYol at 56% but our model says 20%.`,
-      sources: ['Model edge calculations', 'Kalshi', 'FanDuel'],
+      sources: ['Model edge calculations', 'Kalshi', 'Polymarket'],
     };
   }
 
@@ -189,7 +189,7 @@ The market has NuevaYol at 56% but our model says 20%.`,
 
 Our probability: **20%** (medium confidence)
 Kalshi market: **56%**
-Edge: **-36%** (SELL)
+Edge: **-36%** (BUY NO)
 
 Why we're lower than the market:
 - Not in Bad Bunny's top-20 all-time streaming songs
@@ -231,8 +231,8 @@ function extractSources(response: string): string[] {
   if (response.includes('Kalshi')) {
     sources.push('Kalshi markets');
   }
-  if (response.includes('FanDuel')) {
-    sources.push('FanDuel odds');
+  if (response.includes('Polymarket')) {
+    sources.push('Polymarket markets');
   }
   if (response.includes('Grammy') || response.includes('award')) {
     sources.push('Awards data');

@@ -1,6 +1,6 @@
 {
   "meta": {
-    "version": "2.0.0",
+    "version": "2.1.0",
     "lastUpdated": "2026-01-30T12:00:00Z",
     "lastCalibration": "2026-01-30T12:00:00Z",
     "dataSourcesUpdated": {
@@ -103,18 +103,20 @@
         "ourProbability": 0.20,
         "marketProbability": 0.56,
         "platform": "Kalshi",
+        "marketType": "first_song",
         "edge": -0.36,
-        "recommendation": "SELL",
+        "recommendation": "BUY_NO",
         "confidence": "very_high"
       },
       "mostUnderpriced": {
         "song": "Tití Me Preguntó",
         "ourProbability": 0.28,
-        "marketProbability": 0.167,
-        "platform": "FanDuel",
-        "edge": 0.113,
-        "recommendation": "BUY",
-        "confidence": "high"
+        "marketProbability": 0.26,
+        "platform": "Kalshi",
+        "marketType": "first_song",
+        "edge": 0.02,
+        "recommendation": "HOLD",
+        "confidence": "low"
       }
     }
   },
@@ -267,9 +269,8 @@
       "probability": 0.75,
       "associatedSong": "I Like It",
       "marketOdds": {
-        "platform": "FanDuel",
-        "americanOdds": "-250",
-        "impliedProbability": 0.714
+        "platform": "Kalshi",
+        "impliedProbability": 0.71
       },
       "reasoning": "His only #1 hit; she's box office; cross-cultural appeal; prior Super Bowl experience"
     },
@@ -285,9 +286,8 @@
       "probability": 0.45,
       "associatedSong": "I Like It",
       "marketOdds": {
-        "platform": "FanDuel",
-        "americanOdds": "-160",
-        "impliedProbability": 0.615
+        "platform": "Kalshi",
+        "impliedProbability": 0.55
       },
       "reasoning": "I Like It connection; prior Super Bowl 2020; scheduling uncertain"
     },
@@ -296,9 +296,8 @@
       "probability": 0.30,
       "associatedSong": null,
       "marketOdds": {
-        "platform": "FanDuel",
-        "americanOdds": "-125",
-        "impliedProbability": 0.556
+        "platform": "Polymarket",
+        "impliedProbability": 0.45
       },
       "reasoning": "Puerto Rican connection; 2020 SB precedent; but not an active collaborator"
     },
@@ -307,9 +306,8 @@
       "probability": 0.25,
       "associatedSong": "La Santa",
       "marketOdds": {
-        "platform": "FanDuel",
-        "americanOdds": "+190",
-        "impliedProbability": 0.345
+        "platform": "Kalshi",
+        "impliedProbability": 0.30
       },
       "reasoning": "La Santa requires him; but he's 'retired'; scheduling risk"
     },
@@ -318,9 +316,8 @@
       "probability": 0.05,
       "associatedSong": "MÍA",
       "marketOdds": {
-        "platform": "FanDuel",
-        "americanOdds": "+1200",
-        "impliedProbability": 0.077
+        "platform": "Kalshi",
+        "impliedProbability": 0.08
       },
       "reasoning": "MÍA exists; but no recent relationship; very low probability"
     }
@@ -333,64 +330,50 @@
         "ourProbability": 0.20,
         "marketProbability": 0.56,
         "platform": "Kalshi",
+        "marketType": "first_song",
         "edge": -0.36,
-        "recommendation": "SELL",
-        "confidence": "very_high"
-      },
-      {
-        "song": "BAILE INoLVIDABLE",
-        "ourProbability": 0.65,
-        "marketProbability": 0.091,
-        "platform": "FanDuel",
-        "edge": 0.559,
-        "recommendation": "BUY",
+        "recommendation": "BUY_NO",
         "confidence": "very_high"
       },
       {
         "song": "Tití Me Preguntó",
         "ourProbability": 0.28,
-        "marketProbability": 0.167,
-        "platform": "FanDuel",
-        "edge": 0.113,
-        "recommendation": "BUY",
-        "confidence": "high"
+        "marketProbability": 0.26,
+        "platform": "Kalshi",
+        "marketType": "first_song",
+        "edge": 0.02,
+        "recommendation": "HOLD",
+        "confidence": "low"
       }
     ],
     "valuePlays": [
       {
-        "song": "DtMF",
-        "ourProbability": 0.12,
-        "marketProbability": 0.118,
-        "platform": "FanDuel",
-        "edge": 0.002,
-        "recommendation": "HOLD",
-        "confidence": "low"
-      },
-      {
-        "song": "ALAMBRE PuA",
-        "ourProbability": 0.03,
-        "marketProbability": 0.227,
-        "platform": "FanDuel",
-        "edge": -0.197,
-        "recommendation": "FADE",
-        "confidence": "high"
+        "song": "DÁKITI",
+        "ourProbability": 0.95,
+        "marketProbability": 0.92,
+        "platform": "Kalshi",
+        "marketType": "songs_played",
+        "edge": 0.03,
+        "recommendation": "BUY_YES",
+        "confidence": "medium"
       },
       {
         "song": "La MuDANZA",
         "ourProbability": 0.05,
-        "marketProbability": 0.189,
-        "platform": "FanDuel",
-        "edge": -0.139,
-        "recommendation": "FADE",
+        "marketProbability": 0.21,
+        "platform": "Kalshi",
+        "marketType": "first_song",
+        "edge": -0.16,
+        "recommendation": "BUY_NO",
         "confidence": "high"
       }
     ],
     "arbitrage": {
       "opportunity": "NuevaYol Cross-Platform",
       "kalshiImplied": 0.56,
-      "otherImplied": 0.133,
-      "spread": 0.427,
-      "recommendation": "Sell Kalshi YES - model suggests fair value is 20%"
+      "otherImplied": 0.52,
+      "spread": 0.04,
+      "recommendation": "BUY NO on Kalshi — model fair value is 20%"
     }
   },
 
@@ -401,6 +384,12 @@
       "date": "2026-01-30",
       "version": "2.0.0",
       "changes": "Initial v2 model with original probability calculations",
+      "author": "model_engine"
+    },
+    {
+      "date": "2026-01-30",
+      "version": "2.1.0",
+      "changes": "Removed FanDuel; added Polymarket songs_played; BUY YES/BUY NO terminology; Kalshi portfolio integration",
       "author": "model_engine"
     }
   ],
@@ -421,6 +410,6 @@
       "Billboard chart history",
       "Latin Grammy / Grammy awards data"
     ],
-    "marketUsage": "Markets (Kalshi, Polymarket, FanDuel) are used ONLY for edge calculation, never as probability input"
+    "marketUsage": "Markets (Kalshi, Polymarket) are used ONLY for edge calculation, never as probability input"
   }
 }

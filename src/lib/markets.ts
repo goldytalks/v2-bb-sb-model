@@ -3,51 +3,35 @@
  *
  * IMPORTANT: This data is used ONLY for comparison with our model.
  * Market data NEVER influences our probability calculations.
+ *
+ * Platforms: Kalshi + Polymarket (both have First Song & Songs Played markets)
  */
 
 import type { MarketOdds, MarketComparisonResponse } from '@/types';
-import { findAllEdges, getModel } from './model';
+import { findAllEdges } from './model';
 
 // ============================================================================
 // API ENDPOINTS
 // ============================================================================
 
 const KALSHI_API = 'https://api.elections.kalshi.com/trade-api/v2';
-const POLYMARKET_API = 'https://clob.polymarket.com';
-
-// Market IDs - update these when real markets are available
-const MARKET_IDS = {
-  kalshi: {
-    firstSong: 'SBLX-BADBUNNY-FIRST',
-    guests: 'SBLX-BADBUNNY-GUESTS',
-  },
-  polymarket: {
-    firstSong: '', // Add when available
-  },
-};
+const POLYMARKET_GAMMA_API = 'https://gamma-api.polymarket.com';
+const POLYMARKET_CLOB_API = 'https://clob.polymarket.com';
 
 // ============================================================================
 // KALSHI FETCHER
 // ============================================================================
 
-interface KalshiMarketResponse {
-  market?: {
-    ticker: string;
-    yes_bid: number;
-    no_bid: number;
-    last_price: number;
-    volume: number;
-  };
-}
-
-export async function fetchKalshiOdds(): Promise<MarketOdds[]> {
+export async function fetchKalshiOdds(): Promise<{
+  firstSong: MarketOdds[];
+  songsPlayed: MarketOdds[];
+}> {
   try {
-    // For Super Bowl markets, we need to fetch from their elections API
     const response = await fetch(
       `${KALSHI_API}/markets?series_ticker=SBLX`,
       {
         headers: { 'Accept': 'application/json' },
-        next: { revalidate: 60 }, // Cache for 60 seconds
+        next: { revalidate: 60 },
       }
     );
 
@@ -56,136 +40,196 @@ export async function fetchKalshiOdds(): Promise<MarketOdds[]> {
     }
 
     const data = await response.json();
+    const markets = data.markets || [];
 
-    // Parse markets into our format
-    const odds: MarketOdds[] = [];
+    const firstSong: MarketOdds[] = [];
+    const songsPlayed: MarketOdds[] = [];
 
-    // Map Kalshi market data to our song predictions
-    // This is mock data structure - update when real markets available
-    const kalshiSongs = [
-      { song: 'NuevaYol', impliedProbability: 0.56, volume: 12500 },
-      { song: 'Tití Me Preguntó', impliedProbability: 0.26, volume: 8200 },
-      { song: 'La MuDANZA', impliedProbability: 0.21, volume: 5100 },
-      { song: 'DÁKITI', impliedProbability: 0.13, volume: 3800 },
-      { song: 'BAILE INoLVIDABLE', impliedProbability: 0.11, volume: 2900 },
-      { song: 'La Canción', impliedProbability: 0.05, volume: 1200 },
-      { song: 'DtMF', impliedProbability: 0.03, volume: 800 },
-    ];
+    for (const m of markets) {
+      const ticker: string = m.ticker || '';
+      const yesPrice = (m.yes_bid || m.last_price || 0) / 100;
+      const noPrice = 1 - yesPrice;
+      const title: string = (m.title || '').toLowerCase();
 
-    for (const item of kalshiSongs) {
-      odds.push({
+      const odds: MarketOdds = {
         platform: 'kalshi',
-        song: item.song,
-        impliedProbability: item.impliedProbability,
-        volume: item.volume,
+        song: m.title || ticker,
+        marketType: 'first_song',
+        impliedProbability: yesPrice,
+        yesPrice,
+        noPrice,
+        volume: m.volume || 0,
         lastUpdated: new Date().toISOString(),
-      });
+      };
+
+      if (ticker.includes('FIRST') || title.includes('first song')) {
+        odds.marketType = 'first_song';
+        firstSong.push(odds);
+      } else if (ticker.includes('PLAYED') || title.includes('played') || title.includes('setlist')) {
+        odds.marketType = 'songs_played';
+        songsPlayed.push(odds);
+      } else {
+        // Default to first_song bucket
+        firstSong.push(odds);
+      }
     }
 
-    return odds;
+    // If API returned no parseable markets, use fallbacks
+    if (firstSong.length === 0) {
+      firstSong.push(...getKalshiFallback('first_song'));
+    }
+    if (songsPlayed.length === 0) {
+      songsPlayed.push(...getKalshiFallback('songs_played'));
+    }
+
+    return { firstSong, songsPlayed };
   } catch (error) {
     console.error('Kalshi fetch error:', error);
-    // Return cached/fallback data
-    return getKalshiFallback();
+    return {
+      firstSong: getKalshiFallback('first_song'),
+      songsPlayed: getKalshiFallback('songs_played'),
+    };
   }
 }
 
-function getKalshiFallback(): MarketOdds[] {
+function getKalshiFallback(marketType: 'first_song' | 'songs_played'): MarketOdds[] {
+  const now = new Date().toISOString();
+  if (marketType === 'first_song') {
+    return [
+      { platform: 'kalshi', song: 'NuevaYol', marketType: 'first_song', impliedProbability: 0.56, yesPrice: 0.56, noPrice: 0.44, volume: 12500, lastUpdated: now },
+      { platform: 'kalshi', song: 'Tití Me Preguntó', marketType: 'first_song', impliedProbability: 0.26, yesPrice: 0.26, noPrice: 0.74, volume: 8200, lastUpdated: now },
+      { platform: 'kalshi', song: 'La MuDANZA', marketType: 'first_song', impliedProbability: 0.21, yesPrice: 0.21, noPrice: 0.79, volume: 5100, lastUpdated: now },
+      { platform: 'kalshi', song: 'DÁKITI', marketType: 'first_song', impliedProbability: 0.13, yesPrice: 0.13, noPrice: 0.87, volume: 3800, lastUpdated: now },
+      { platform: 'kalshi', song: 'BAILE INoLVIDABLE', marketType: 'first_song', impliedProbability: 0.11, yesPrice: 0.11, noPrice: 0.89, volume: 2900, lastUpdated: now },
+    ];
+  }
   return [
-    { platform: 'kalshi', song: 'NuevaYol', impliedProbability: 0.56, volume: 12500, lastUpdated: new Date().toISOString() },
-    { platform: 'kalshi', song: 'Tití Me Preguntó', impliedProbability: 0.26, volume: 8200, lastUpdated: new Date().toISOString() },
-    { platform: 'kalshi', song: 'La MuDANZA', impliedProbability: 0.21, volume: 5100, lastUpdated: new Date().toISOString() },
-    { platform: 'kalshi', song: 'DÁKITI', impliedProbability: 0.13, volume: 3800, lastUpdated: new Date().toISOString() },
-    { platform: 'kalshi', song: 'BAILE INoLVIDABLE', impliedProbability: 0.11, volume: 2900, lastUpdated: new Date().toISOString() },
+    { platform: 'kalshi', song: 'DÁKITI', marketType: 'songs_played', impliedProbability: 0.92, yesPrice: 0.92, noPrice: 0.08, volume: 6200, lastUpdated: now },
+    { platform: 'kalshi', song: 'Tití Me Preguntó', marketType: 'songs_played', impliedProbability: 0.85, yesPrice: 0.85, noPrice: 0.15, volume: 5800, lastUpdated: now },
+    { platform: 'kalshi', song: 'Me Porto Bonito', marketType: 'songs_played', impliedProbability: 0.80, yesPrice: 0.80, noPrice: 0.20, volume: 4500, lastUpdated: now },
+    { platform: 'kalshi', song: 'BAILE INoLVIDABLE', marketType: 'songs_played', impliedProbability: 0.88, yesPrice: 0.88, noPrice: 0.12, volume: 5100, lastUpdated: now },
+    { platform: 'kalshi', song: 'DtMF', marketType: 'songs_played', impliedProbability: 0.75, yesPrice: 0.75, noPrice: 0.25, volume: 3900, lastUpdated: now },
   ];
 }
 
 // ============================================================================
-// POLYMARKET FETCHER
+// POLYMARKET FETCHER (Gamma API for discovery, CLOB for prices)
 // ============================================================================
 
-export async function fetchPolymarketOdds(): Promise<MarketOdds[]> {
-  try {
-    // Polymarket API - update with real condition ID when available
-    if (!MARKET_IDS.polymarket.firstSong) {
-      return getPolymarketFallback();
-    }
+interface GammaMarket {
+  id: string;
+  condition_id: string;
+  question: string;
+  slug: string;
+  tokens?: { token_id: string; outcome: string }[];
+  outcomePrices?: string;
+}
 
-    const response = await fetch(
-      `${POLYMARKET_API}/markets/${MARKET_IDS.polymarket.firstSong}`,
-      {
-        headers: { 'Accept': 'application/json' },
-        next: { revalidate: 60 },
-      }
+export async function fetchPolymarketOdds(): Promise<{
+  firstSong: MarketOdds[];
+  songsPlayed: MarketOdds[];
+}> {
+  try {
+    // Discover markets via Gamma API
+    const searchRes = await fetch(
+      `${POLYMARKET_GAMMA_API}/markets?tag=super-bowl&closed=false&limit=50`,
+      { headers: { 'Accept': 'application/json' }, next: { revalidate: 60 } }
     );
 
-    if (!response.ok) {
-      throw new Error(`Polymarket API error: ${response.status}`);
+    if (!searchRes.ok) throw new Error(`Gamma API error: ${searchRes.status}`);
+
+    const markets: GammaMarket[] = await searchRes.json();
+
+    const firstSong: MarketOdds[] = [];
+    const songsPlayed: MarketOdds[] = [];
+
+    for (const market of markets) {
+      const q = (market.question || '').toLowerCase();
+      const isBadBunny = q.includes('bad bunny');
+      if (!isBadBunny) continue;
+
+      const isFirstSong = q.includes('first song') || q.includes('opening song');
+      const isSongsPlayed = q.includes('played') || q.includes('setlist') || q.includes('perform');
+
+      // Try to get price from CLOB
+      let yesPrice = 0.5;
+      try {
+        if (market.condition_id) {
+          const clobRes = await fetch(
+            `${POLYMARKET_CLOB_API}/markets/${market.condition_id}`,
+            { headers: { 'Accept': 'application/json' }, next: { revalidate: 60 } }
+          );
+          if (clobRes.ok) {
+            const clobData = await clobRes.json();
+            const prices = clobData.outcomePrices;
+            if (typeof prices === 'string') {
+              const parsed = JSON.parse(prices);
+              yesPrice = parseFloat(parsed[0]) || 0.5;
+            } else if (Array.isArray(prices)) {
+              yesPrice = parseFloat(prices[0]) || 0.5;
+            }
+          }
+        }
+      } catch {
+        // Use default price
+      }
+
+      // Also try outcomePrices from Gamma response
+      if (market.outcomePrices) {
+        try {
+          const parsed = JSON.parse(market.outcomePrices);
+          yesPrice = parseFloat(parsed[0]) || yesPrice;
+        } catch {
+          // keep existing
+        }
+      }
+
+      const odds: MarketOdds = {
+        platform: 'polymarket',
+        song: market.question || market.slug,
+        marketType: isFirstSong ? 'first_song' : 'songs_played',
+        impliedProbability: yesPrice,
+        yesPrice,
+        noPrice: 1 - yesPrice,
+        volume: 0,
+        lastUpdated: new Date().toISOString(),
+      };
+
+      if (isFirstSong) {
+        firstSong.push(odds);
+      } else if (isSongsPlayed) {
+        songsPlayed.push(odds);
+      }
     }
 
-    const data = await response.json();
+    // Fallback if no markets found
+    if (firstSong.length === 0) firstSong.push(...getPolymarketFallback('first_song'));
+    if (songsPlayed.length === 0) songsPlayed.push(...getPolymarketFallback('songs_played'));
 
-    // Parse into our format
-    return [{
-      platform: 'polymarket',
-      song: 'First Song Market',
-      impliedProbability: data.outcomePrices?.[0] || 0.5,
-      volume: data.volume || 0,
-      lastUpdated: new Date().toISOString(),
-    }];
+    return { firstSong, songsPlayed };
   } catch (error) {
     console.error('Polymarket fetch error:', error);
-    return getPolymarketFallback();
+    return {
+      firstSong: getPolymarketFallback('first_song'),
+      songsPlayed: getPolymarketFallback('songs_played'),
+    };
   }
 }
 
-function getPolymarketFallback(): MarketOdds[] {
+function getPolymarketFallback(marketType: 'first_song' | 'songs_played'): MarketOdds[] {
+  const now = new Date().toISOString();
+  if (marketType === 'first_song') {
+    return [
+      { platform: 'polymarket', song: 'NuevaYol', marketType: 'first_song', impliedProbability: 0.52, yesPrice: 0.52, noPrice: 0.48, volume: 8500, lastUpdated: now },
+      { platform: 'polymarket', song: 'Tití Me Preguntó', marketType: 'first_song', impliedProbability: 0.28, yesPrice: 0.28, noPrice: 0.72, volume: 6200, lastUpdated: now },
+      { platform: 'polymarket', song: 'DÁKITI', marketType: 'first_song', impliedProbability: 0.10, yesPrice: 0.10, noPrice: 0.90, volume: 3100, lastUpdated: now },
+    ];
+  }
   return [
-    { platform: 'polymarket', song: 'NuevaYol', impliedProbability: 0.52, volume: 8500, lastUpdated: new Date().toISOString() },
-    { platform: 'polymarket', song: 'Tití Me Preguntó', impliedProbability: 0.28, volume: 6200, lastUpdated: new Date().toISOString() },
+    { platform: 'polymarket', song: 'DÁKITI', marketType: 'songs_played', impliedProbability: 0.90, yesPrice: 0.90, noPrice: 0.10, volume: 5000, lastUpdated: now },
+    { platform: 'polymarket', song: 'Tití Me Preguntó', marketType: 'songs_played', impliedProbability: 0.82, yesPrice: 0.82, noPrice: 0.18, volume: 4200, lastUpdated: now },
+    { platform: 'polymarket', song: 'Me Porto Bonito', marketType: 'songs_played', impliedProbability: 0.78, yesPrice: 0.78, noPrice: 0.22, volume: 3800, lastUpdated: now },
   ];
-}
-
-// ============================================================================
-// FANDUEL FETCHER (Scraping approach - odds from sportsbooks)
-// ============================================================================
-
-export async function fetchFanDuelOdds(): Promise<{
-  firstSong: MarketOdds[];
-  lastSong: MarketOdds[];
-  guests: MarketOdds[];
-}> {
-  // FanDuel doesn't have a public API - use cached odds
-  // Update these manually or via scraping service
-  return {
-    firstSong: [
-      { platform: 'fanduel', song: 'BAILE INoLVIDABLE', impliedProbability: 0.323, americanOdds: '+210', lastUpdated: new Date().toISOString() },
-      { platform: 'fanduel', song: 'MONACO', impliedProbability: 0.250, americanOdds: '+300', lastUpdated: new Date().toISOString() },
-      { platform: 'fanduel', song: 'ALAMBRE PuA', impliedProbability: 0.227, americanOdds: '+340', lastUpdated: new Date().toISOString() },
-      { platform: 'fanduel', song: 'La MuDANZA', impliedProbability: 0.189, americanOdds: '+430', lastUpdated: new Date().toISOString() },
-      { platform: 'fanduel', song: 'Tití Me Preguntó', impliedProbability: 0.167, americanOdds: '+500', lastUpdated: new Date().toISOString() },
-      { platform: 'fanduel', song: 'NuevaYol', impliedProbability: 0.133, americanOdds: '+650', lastUpdated: new Date().toISOString() },
-      { platform: 'fanduel', song: 'DtMF', impliedProbability: 0.118, americanOdds: '+750', lastUpdated: new Date().toISOString() },
-      { platform: 'fanduel', song: 'Me Porto Bonito', impliedProbability: 0.083, americanOdds: '+1100', lastUpdated: new Date().toISOString() },
-      { platform: 'fanduel', song: 'I Like It', impliedProbability: 0.059, americanOdds: '+1600', lastUpdated: new Date().toISOString() },
-      { platform: 'fanduel', song: 'DÁKITI', impliedProbability: 0.036, americanOdds: '+2700', lastUpdated: new Date().toISOString() },
-    ],
-    lastSong: [
-      { platform: 'fanduel', song: 'EoO', impliedProbability: 0.323, americanOdds: '+210', lastUpdated: new Date().toISOString() },
-      { platform: 'fanduel', song: 'DtMF', impliedProbability: 0.313, americanOdds: '+220', lastUpdated: new Date().toISOString() },
-      { platform: 'fanduel', song: 'La MuDANZA', impliedProbability: 0.208, americanOdds: '+380', lastUpdated: new Date().toISOString() },
-      { platform: 'fanduel', song: 'BAILE INoLVIDABLE', impliedProbability: 0.091, americanOdds: '+1000', lastUpdated: new Date().toISOString() },
-    ],
-    guests: [
-      { platform: 'fanduel', song: 'Cardi B', impliedProbability: 0.714, americanOdds: '-250', lastUpdated: new Date().toISOString() },
-      { platform: 'fanduel', song: 'J Balvin', impliedProbability: 0.615, americanOdds: '-160', lastUpdated: new Date().toISOString() },
-      { platform: 'fanduel', song: 'Jennifer Lopez', impliedProbability: 0.556, americanOdds: '-125', lastUpdated: new Date().toISOString() },
-      { platform: 'fanduel', song: 'Ricky Martin', impliedProbability: 0.556, americanOdds: '-125', lastUpdated: new Date().toISOString() },
-      { platform: 'fanduel', song: 'Karol G', impliedProbability: 0.500, americanOdds: '+100', lastUpdated: new Date().toISOString() },
-      { platform: 'fanduel', song: 'Daddy Yankee', impliedProbability: 0.345, americanOdds: '+190', lastUpdated: new Date().toISOString() },
-      { platform: 'fanduel', song: 'Drake', impliedProbability: 0.077, americanOdds: '+1200', lastUpdated: new Date().toISOString() },
-    ],
-  };
 }
 
 // ============================================================================
@@ -193,33 +237,38 @@ export async function fetchFanDuelOdds(): Promise<{
 // ============================================================================
 
 export async function getMarketComparison(): Promise<MarketComparisonResponse> {
-  const [kalshi, polymarket, fanduel] = await Promise.all([
+  const [kalshi, polymarket] = await Promise.all([
     fetchKalshiOdds(),
     fetchPolymarketOdds(),
-    fetchFanDuelOdds(),
   ]);
 
   // Combine all first song markets for edge calculation
   const allFirstSongMarkets = [
-    ...kalshi,
-    ...polymarket,
-    ...fanduel.firstSong,
+    ...kalshi.firstSong,
+    ...polymarket.firstSong,
+  ];
+
+  // Combine songs played markets
+  const allSongsPlayedMarkets = [
+    ...kalshi.songsPlayed,
+    ...polymarket.songsPlayed,
   ];
 
   // Calculate edges against our model
-  const edges = findAllEdges(allFirstSongMarkets);
+  const firstSongEdges = findAllEdges(allFirstSongMarkets);
+  const songsPlayedEdges = findAllEdges(allSongsPlayedMarkets);
 
   return {
     kalshi: {
-      firstSong: kalshi,
-      guests: [], // Add when available
+      firstSong: kalshi.firstSong,
+      songsPlayed: kalshi.songsPlayed,
     },
     polymarket: {
-      firstSong: polymarket,
+      firstSong: polymarket.firstSong,
+      songsPlayed: polymarket.songsPlayed,
     },
-    fanduel,
     lastFetched: new Date().toISOString(),
-    edges,
+    edges: [...firstSongEdges, ...songsPlayedEdges],
   };
 }
 
@@ -227,9 +276,6 @@ export async function getMarketComparison(): Promise<MarketComparisonResponse> {
 // UTILITY FUNCTIONS
 // ============================================================================
 
-/**
- * Convert American odds to implied probability
- */
 export function americanToImplied(american: string): number {
   const odds = parseInt(american.replace('+', '').replace('-', ''));
   if (american.startsWith('+')) {
@@ -239,9 +285,6 @@ export function americanToImplied(american: string): number {
   }
 }
 
-/**
- * Convert implied probability to American odds
- */
 export function impliedToAmerican(probability: number): string {
   if (probability >= 0.5) {
     const odds = Math.round((probability / (1 - probability)) * 100);

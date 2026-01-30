@@ -5,12 +5,11 @@ import { findAllEdges, getModel } from '@/lib/model';
 export const dynamic = 'force-dynamic';
 
 /**
- * Cron endpoint for hourly market comparison updates
+ * Cron endpoint for market comparison updates
  * Called by Vercel Cron - see vercel.json
  */
 export async function GET(request: NextRequest) {
   try {
-    // Verify cron secret
     const authHeader = request.headers.get('authorization');
     if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
       return NextResponse.json(
@@ -19,22 +18,18 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Fetch latest market data
     const marketData = await getMarketComparison();
 
-    // Calculate edges
-    const model = getModel();
     const allMarkets = [
       ...marketData.kalshi.firstSong,
+      ...marketData.kalshi.songsPlayed,
       ...marketData.polymarket.firstSong,
-      ...marketData.fanduel.firstSong,
+      ...marketData.polymarket.songsPlayed,
     ];
     const edges = findAllEdges(allMarkets);
 
-    // Find significant edge changes (could trigger alerts)
     const significantEdges = edges.filter(e => Math.abs(e.edge) > 0.15);
 
-    // Log for monitoring
     console.log(`[CRON] Market update complete. Found ${significantEdges.length} significant edges.`);
 
     return NextResponse.json({

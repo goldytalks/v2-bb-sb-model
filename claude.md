@@ -6,6 +6,8 @@ A production-grade prediction model for Bad Bunny's Super Bowl LX halftime show 
 
 **Key Principle:** Our model generates ORIGINAL probability estimates. Kalshi/Polymarket data is used ONLY for comparison to identify market inefficiencies—never as input signal.
 
+**Deployment Rule:** Every time changes are made, commit to GitHub and deploy to Vercel. This is automatic — after completing any code changes, always run `git add`, `git commit`, `git push`, and `vercel --prod` so that both our GitHub repo and Vercel production deployment stay in sync.
+
 ---
 
 ## Quick Start

@@ -2,6 +2,8 @@
 // CORE MODEL TYPES
 // ============================================================================
 
+export type MarketType = 'first_song' | 'songs_played';
+
 export interface SongPrediction {
   rank: number;
   song: string;
@@ -19,10 +21,12 @@ export interface SongPrediction {
 }
 
 export interface MarketOdds {
-  platform: 'kalshi' | 'polymarket' | 'fanduel';
+  platform: 'kalshi' | 'polymarket';
   song: string;
+  marketType: MarketType;
   impliedProbability: number;
-  americanOdds?: string;
+  yesPrice?: number;
+  noPrice?: number;
   volume?: number;
   lastUpdated: string;
 }
@@ -32,8 +36,9 @@ export interface EdgeCalculation {
   ourProbability: number;
   marketProbability: number;
   platform: string;
+  marketType: MarketType;
   edge: number;  // ourProb - marketProb
-  recommendation: 'BUY' | 'SELL' | 'FADE' | 'HOLD';
+  recommendation: 'BUY_YES' | 'BUY_NO' | 'HOLD';
   confidence: 'low' | 'medium' | 'high' | 'very_high';
 }
 
@@ -53,7 +58,6 @@ export interface GuestPrediction {
   associatedSong: string | null;
   marketOdds?: {
     platform: string;
-    americanOdds: string;
     impliedProbability: number;
   };
   reasoning: string;
@@ -86,6 +90,41 @@ export interface ModelMeta {
     markets: string;
   };
   confidence: number;  // Overall model confidence 0-1
+}
+
+// ============================================================================
+// KALSHI PORTFOLIO TYPES
+// ============================================================================
+
+export interface KalshiPosition {
+  ticker: string;
+  title: string;
+  side: 'yes' | 'no';
+  quantity: number;
+  avgPrice: number;
+  currentPrice: number;
+  unrealizedPnl: number;
+}
+
+export interface KalshiPortfolio {
+  balance: number;
+  positions: KalshiPosition[];
+  totalUnrealizedPnl: number;
+}
+
+export interface PortfolioAnalysis {
+  portfolio: KalshiPortfolio;
+  recommendations: {
+    position: KalshiPosition;
+    modelEdge: number;
+    action: 'HOLD' | 'CLOSE' | 'INCREASE';
+    reasoning: string;
+  }[];
+  missedOpportunities: {
+    song: string;
+    edge: number;
+    recommendation: 'BUY_YES' | 'BUY_NO';
+  }[];
 }
 
 // ============================================================================
@@ -173,15 +212,11 @@ export interface UpdateRequest {
 export interface MarketComparisonResponse {
   kalshi: {
     firstSong: MarketOdds[];
-    guests: MarketOdds[];
+    songsPlayed: MarketOdds[];
   };
   polymarket: {
     firstSong: MarketOdds[];
-  };
-  fanduel: {
-    firstSong: MarketOdds[];
-    lastSong: MarketOdds[];
-    guests: MarketOdds[];
+    songsPlayed: MarketOdds[];
   };
   lastFetched: string;
   edges: EdgeCalculation[];
@@ -209,7 +244,7 @@ export interface ProbabilityBarProps {
 }
 
 export interface TradeCardProps {
-  action: 'BUY' | 'SELL' | 'FADE';
+  action: 'BUY_YES' | 'BUY_NO' | 'HOLD';
   platform: string;
   bet: string;
   marketPrice: string;

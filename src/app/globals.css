@@ -198,16 +198,16 @@ body {
   @apply p-4 border-r-2 border-terminal-border;
 }
 
-.trade-card.buy {
+.trade-card.buy-yes {
   background: rgba(0, 255, 136, 0.05);
 }
 
-.trade-card.sell {
+.trade-card.buy-no {
   background: rgba(255, 68, 68, 0.05);
 }
 
-.trade-card.fade {
-  background: rgba(255, 215, 0, 0.05);
+.trade-card.hold {
+  background: rgba(102, 102, 102, 0.05);
 }
 
 /* Chatbot */

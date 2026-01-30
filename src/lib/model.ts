@@ -5,7 +5,7 @@
  * Markets are NEVER used as input - only for comparison.
  */
 
-import type { PredictionModel, SongPrediction, EdgeCalculation, MarketOdds, GuestPrediction } from '@/types';
+import type { PredictionModel, SongPrediction, EdgeCalculation, MarketOdds, GuestPrediction, MarketType } from '@/types';
 import predictionsData from '@/data/predictions.json';
 
 // ============================================================================
@@ -48,10 +48,6 @@ export function invalidateCache(): void {
 // PROBABILITY CALCULATIONS
 // ============================================================================
 
-/**
- * Calculate weighted probability score from factors
- * This is our ORIGINAL calculation - not based on markets
- */
 export function calculateProbabilityScore(factors: SongPrediction['factors']): number {
   const score = (
     factors.streaming * WEIGHTS.streaming +
@@ -60,39 +56,26 @@ export function calculateProbabilityScore(factors: SongPrediction['factors']): n
     factors.cultural * WEIGHTS.cultural +
     factors.albumPush * WEIGHTS.albumPush
   );
-
-  // Normalize to 0-1 range
   return score / 100;
 }
 
-/**
- * Convert raw scores to probability distribution
- * Ensures all probabilities sum to 1
- */
 export function normalizeProbabilities(songs: SongPrediction[]): SongPrediction[] {
   const scores = songs.map(s => calculateProbabilityScore(s.factors));
   const total = scores.reduce((a, b) => a + b, 0);
-
   return songs.map((song, i) => ({
     ...song,
     probability: scores[i] / total,
   }));
 }
 
-/**
- * Determine confidence level based on probability spread and factors
- */
 export function getConfidenceLevel(
   probability: number,
   factors: SongPrediction['factors']
 ): 'low' | 'medium' | 'high' | 'very_high' {
-  // High confidence if factors are consistent (low variance)
   const factorValues = Object.values(factors);
   const mean = factorValues.reduce((a, b) => a + b, 0) / factorValues.length;
   const variance = factorValues.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / factorValues.length;
   const consistency = 1 - (Math.sqrt(variance) / 100);
-
-  // Combine probability magnitude with factor consistency
   const confidenceScore = (probability * 0.6) + (consistency * 0.4);
 
   if (confidenceScore >= CONFIDENCE_THRESHOLDS.veryHigh) return 'very_high';
@@ -107,13 +90,13 @@ export function getConfidenceLevel(
 
 /**
  * Calculate edge between our probability and market probability
- * Positive edge = market underpricing (BUY opportunity)
- * Negative edge = market overpricing (SELL/FADE opportunity)
+ * Positive edge → BUY_YES, Negative edge → BUY_NO, Near zero → HOLD
  */
 export function calculateEdge(
   ourProbability: number,
   marketProbability: number,
-  platform: string
+  platform: string,
+  marketType: MarketType = 'first_song'
 ): EdgeCalculation {
   const edge = ourProbability - marketProbability;
 
@@ -121,25 +104,25 @@ export function calculateEdge(
   let confidence: EdgeCalculation['confidence'];
 
   if (edge > 0.15) {
-    recommendation = 'BUY';
+    recommendation = 'BUY_YES';
     confidence = 'very_high';
   } else if (edge > 0.05) {
-    recommendation = 'BUY';
+    recommendation = 'BUY_YES';
     confidence = 'high';
   } else if (edge > 0.02) {
-    recommendation = 'BUY';
+    recommendation = 'BUY_YES';
     confidence = 'medium';
   } else if (edge > -0.02) {
     recommendation = 'HOLD';
     confidence = 'low';
   } else if (edge > -0.10) {
-    recommendation = 'FADE';
+    recommendation = 'BUY_NO';
     confidence = 'medium';
   } else if (edge > -0.20) {
-    recommendation = 'SELL';
+    recommendation = 'BUY_NO';
     confidence = 'high';
   } else {
-    recommendation = 'SELL';
+    recommendation = 'BUY_NO';
     confidence = 'very_high';
   }
 
@@ -148,6 +131,7 @@ export function calculateEdge(
     ourProbability,
     marketProbability,
     platform,
+    marketType,
     edge,
     recommendation,
     confidence,
@@ -155,30 +139,48 @@ export function calculateEdge(
 }
 
 /**
- * Find all edges between our model and market data
+ * Find all edges between our model and market data.
+ * Handles both first_song and songs_played market types.
  */
 export function findAllEdges(marketData: MarketOdds[]): EdgeCalculation[] {
   const model = getModel();
   const edges: EdgeCalculation[] = [];
 
   for (const market of marketData) {
-    // Find our probability for this song
-    const ourPrediction = model.firstSong.predictions.find(
-      p => p.song.toLowerCase() === market.song.toLowerCase()
-    );
+    const mType = market.marketType || 'first_song';
 
-    if (ourPrediction) {
-      const edge = calculateEdge(
-        ourPrediction.probability,
-        market.impliedProbability,
-        market.platform
+    if (mType === 'first_song') {
+      const ourPrediction = model.firstSong.predictions.find(
+        p => p.song.toLowerCase() === market.song.toLowerCase()
       );
-      edge.song = market.song;
-      edges.push(edge);
+      if (ourPrediction) {
+        const edge = calculateEdge(
+          ourPrediction.probability,
+          market.impliedProbability,
+          market.platform,
+          'first_song'
+        );
+        edge.song = market.song;
+        edges.push(edge);
+      }
+    } else if (mType === 'songs_played') {
+      // For songs_played, match against setlist inclusion probabilities
+      const setlistSong = model.setlist.primary.find(
+        s => s.song.toLowerCase() === market.song.toLowerCase()
+      );
+      if (setlistSong) {
+        const edge = calculateEdge(
+          setlistSong.inclusionProbability,
+          market.impliedProbability,
+          market.platform,
+          'songs_played'
+        );
+        edge.song = market.song;
+        edges.push(edge);
+      }
     }
   }
 
-  // Sort by absolute edge value (largest mispricings first)
   return edges.sort((a, b) => Math.abs(b.edge) - Math.abs(a.edge));
 }
 
@@ -186,10 +188,6 @@ export function findAllEdges(marketData: MarketOdds[]): EdgeCalculation[] {
 // MODEL UPDATES
 // ============================================================================
 
-/**
- * Update a specific song's factors and recalculate probability
- * This triggers a full renormalization
- */
 export function updateSongFactors(
   song: string,
   factors: Partial<SongPrediction['factors']>,
@@ -202,35 +200,22 @@ export function updateSongFactors(
 
   if (!prediction) return null;
 
-  // Update factors
   prediction.factors = { ...prediction.factors, ...factors };
-
-  // Recalculate probability
   const newScore = calculateProbabilityScore(prediction.factors);
   prediction.probability = newScore;
-
-  // Update confidence
   prediction.confidence = getConfidenceLevel(newScore, prediction.factors);
 
-  // Update reasoning if provided
   if (reasoning) {
     prediction.reasoning = reasoning;
   }
 
-  // Renormalize all probabilities
   const normalized = normalizeProbabilities(model.firstSong.predictions);
   model.firstSong.predictions = normalized;
-
-  // Update timestamp
   model.meta.lastUpdated = new Date().toISOString();
 
   return prediction;
 }
 
-/**
- * Directly set a song's probability (bypasses factor calculation)
- * Use sparingly - prefer updateSongFactors
- */
 export function setDirectProbability(
   song: string,
   newProbability: number,
@@ -247,10 +232,8 @@ export function setDirectProbability(
   prediction.probability = newProbability;
   prediction.reasoning = `${reasoning} [Updated from ${(oldProbability * 100).toFixed(1)}% to ${(newProbability * 100).toFixed(1)}%]`;
 
-  // Update timestamp
   model.meta.lastUpdated = new Date().toISOString();
 
-  // Add to update log
   model.updateLog.push({
     date: new Date().toISOString().split('T')[0],
     version: model.meta.version,
@@ -292,8 +275,6 @@ export function getModelMeta(): PredictionModel['meta'] {
 export function getTopEdge(): EdgeCalculation | null {
   const positions = getMarketPositions();
   if (positions.highConviction.length === 0) return null;
-
-  // Return the edge with largest absolute value
   return positions.highConviction.reduce((best, current) =>
     Math.abs(current.edge) > Math.abs(best.edge) ? current : best
   );
