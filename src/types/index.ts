@@ -2,7 +2,7 @@
 // CORE MODEL TYPES
 // ============================================================================
 
-export type MarketType = 'first_song' | 'songs_played';
+export type MarketType = 'first_song' | 'songs_played' | 'guest_performer';
 
 export interface SongPrediction {
   rank: number;
@@ -20,14 +20,21 @@ export interface SongPrediction {
   };
 }
 
+export interface OrderbookSide {
+  bid: number;
+  ask: number;
+  mid: number;
+  spread: number;
+}
+
 export interface MarketOdds {
   platform: 'kalshi' | 'polymarket';
   song: string;
   marketType: MarketType;
   impliedProbability: number;
-  yesPrice?: number;
-  noPrice?: number;
-  volume?: number;
+  yes: OrderbookSide;
+  no: OrderbookSide;
+  volume: number;
   lastUpdated: string;
 }
 
@@ -213,10 +220,12 @@ export interface MarketComparisonResponse {
   kalshi: {
     firstSong: MarketOdds[];
     songsPlayed: MarketOdds[];
+    guestPerformers: MarketOdds[];
   };
   polymarket: {
     firstSong: MarketOdds[];
     songsPlayed: MarketOdds[];
+    guestPerformers: MarketOdds[];
   };
   lastFetched: string;
   edges: EdgeCalculation[];

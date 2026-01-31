@@ -4,10 +4,11 @@
  * IMPORTANT: This data is used ONLY for comparison with our model.
  * Market data NEVER influences our probability calculations.
  *
- * Platforms: Kalshi (LIVE) + Polymarket (fallback until markets created)
+ * Platforms: Kalshi + Polymarket
+ * Markets: First Song, Songs Played, Guest Performers
  */
 
-import type { MarketOdds, MarketComparisonResponse } from '@/types';
+import type { MarketOdds, MarketComparisonResponse, OrderbookSide } from '@/types';
 import { findAllEdges } from './model';
 
 // ============================================================================
@@ -15,17 +16,35 @@ import { findAllEdges } from './model';
 // ============================================================================
 
 const KALSHI_API = 'https://api.elections.kalshi.com/trade-api/v2';
+const POLYMARKET_GAMMA_API = 'https://gamma-api.polymarket.com';
 
-// Real Kalshi event tickers — discovered from live API
+// Kalshi event tickers (discovered from live API)
 const KALSHI_EVENTS = {
   firstSong: 'KXFIRSTSUPERBOWLSONG',
+  // No songs-played or guest-performer events exist on Kalshi yet
 };
 
-const POLYMARKET_GAMMA_API = 'https://gamma-api.polymarket.com';
-const POLYMARKET_CLOB_API = 'https://clob.polymarket.com';
+// Polymarket event slugs (discovered from live site)
+const POLYMARKET_EVENTS = {
+  firstSong: 'first-song-at-super-bowl-lx-halftime-show',
+  guestPerformers: 'who-will-perform-at-super-bowl-halftime-show',
+};
 
 // ============================================================================
-// KALSHI FETCHER — LIVE DATA
+// HELPERS
+// ============================================================================
+
+function makeOrderbookSide(bid: number, ask: number): OrderbookSide {
+  const mid = bid > 0 && ask > 0 ? (bid + ask) / 2 : Math.max(bid, ask);
+  return { bid, ask, mid, spread: ask - bid };
+}
+
+function makeSinglePriceSide(price: number): OrderbookSide {
+  return { bid: price, ask: price, mid: price, spread: 0 };
+}
+
+// ============================================================================
+// KALSHI FETCHER
 // ============================================================================
 
 interface KalshiMarket {
@@ -48,18 +67,20 @@ interface KalshiMarket {
 export async function fetchKalshiOdds(): Promise<{
   firstSong: MarketOdds[];
   songsPlayed: MarketOdds[];
+  guestPerformers: MarketOdds[];
 }> {
   const firstSong = await fetchKalshiEvent(KALSHI_EVENTS.firstSong, 'first_song');
 
-  // No "songs played" event on Kalshi yet — return fallback
-  const songsPlayed = getKalshiFallback('songs_played');
-
-  return { firstSong, songsPlayed };
+  return {
+    firstSong,
+    songsPlayed: [],   // No Kalshi market exists
+    guestPerformers: [], // No Kalshi market exists
+  };
 }
 
 async function fetchKalshiEvent(
   seriesTicker: string,
-  marketType: 'first_song' | 'songs_played'
+  marketType: 'first_song' | 'songs_played' | 'guest_performer'
 ): Promise<MarketOdds[]> {
   try {
     const response = await fetch(
@@ -77,16 +98,13 @@ async function fetchKalshiEvent(
     const data = await response.json();
     const markets: KalshiMarket[] = data.markets || [];
 
-    if (markets.length === 0) {
-      return getKalshiFallback(marketType);
-    }
+    if (markets.length === 0) return [];
 
     const odds: MarketOdds[] = [];
 
     for (const m of markets) {
       if (m.status !== 'active') continue;
 
-      // Song name is in yes_sub_title
       const song = m.yes_sub_title || m.no_sub_title || '';
       if (!song) continue;
 
@@ -94,150 +112,136 @@ async function fetchKalshiEvent(
       const yesBid = m.yes_bid / 100;
       const yesAsk = m.yes_ask / 100;
       const noBid = m.no_bid / 100;
-      // Use midpoint of bid/ask as implied probability, fall back to last price
-      const yesMid = yesBid > 0 && yesAsk > 0
-        ? (yesBid + yesAsk) / 2
-        : m.last_price / 100;
+      const noAsk = m.no_ask / 100;
+
+      const yes = makeOrderbookSide(yesBid, yesAsk);
+      const no = makeOrderbookSide(noBid, noAsk);
 
       odds.push({
         platform: 'kalshi',
         song,
         marketType,
-        impliedProbability: yesMid,
-        yesPrice: yesBid > 0 ? yesBid : yesAsk,
-        noPrice: noBid,
+        impliedProbability: yes.mid > 0 ? yes.mid : m.last_price / 100,
+        yes,
+        no,
         volume: m.volume || 0,
         lastUpdated: new Date().toISOString(),
       });
     }
 
-    // Sort by implied probability descending
     odds.sort((a, b) => b.impliedProbability - a.impliedProbability);
-
-    return odds.length > 0 ? odds : getKalshiFallback(marketType);
+    return odds;
   } catch (error) {
     console.error(`Kalshi fetch error for ${seriesTicker}:`, error);
-    return getKalshiFallback(marketType);
+    return [];
   }
-}
-
-function getKalshiFallback(marketType: 'first_song' | 'songs_played'): MarketOdds[] {
-  const now = new Date().toISOString();
-  if (marketType === 'songs_played') {
-    return [
-      { platform: 'kalshi', song: 'DÁKITI', marketType: 'songs_played', impliedProbability: 0.92, yesPrice: 0.92, noPrice: 0.08, volume: 6200, lastUpdated: now },
-      { platform: 'kalshi', song: 'Tití Me Preguntó', marketType: 'songs_played', impliedProbability: 0.85, yesPrice: 0.85, noPrice: 0.15, volume: 5800, lastUpdated: now },
-      { platform: 'kalshi', song: 'Me Porto Bonito', marketType: 'songs_played', impliedProbability: 0.80, yesPrice: 0.80, noPrice: 0.20, volume: 4500, lastUpdated: now },
-      { platform: 'kalshi', song: 'BAILE INoLVIDABLE', marketType: 'songs_played', impliedProbability: 0.88, yesPrice: 0.88, noPrice: 0.12, volume: 5100, lastUpdated: now },
-      { platform: 'kalshi', song: 'DtMF', marketType: 'songs_played', impliedProbability: 0.75, yesPrice: 0.75, noPrice: 0.25, volume: 3900, lastUpdated: now },
-    ];
-  }
-  // first_song fallback should never be needed now that we have the real ticker
-  return [];
 }
 
 // ============================================================================
 // POLYMARKET FETCHER
-// No Bad Bunny halftime markets exist on Polymarket currently.
-// Using fallback data. Will auto-discover when/if markets are created.
 // ============================================================================
+
+interface GammaEvent {
+  id: number;
+  title: string;
+  slug: string;
+  markets: GammaMarket[];
+}
 
 interface GammaMarket {
   id: string;
   condition_id: string;
   question: string;
   slug: string;
-  tokens?: { token_id: string; outcome: string }[];
+  groupItemTitle?: string;
   outcomePrices?: string;
+  volume?: string;
+  liquidity?: string;
+  active: boolean;
+  closed: boolean;
 }
 
 export async function fetchPolymarketOdds(): Promise<{
   firstSong: MarketOdds[];
   songsPlayed: MarketOdds[];
+  guestPerformers: MarketOdds[];
 }> {
+  const [firstSong, guestPerformers] = await Promise.all([
+    fetchPolymarketEvent(POLYMARKET_EVENTS.firstSong, 'first_song'),
+    fetchPolymarketEvent(POLYMARKET_EVENTS.guestPerformers, 'guest_performer'),
+  ]);
+
+  return {
+    firstSong,
+    songsPlayed: [], // No Polymarket market exists for songs played
+    guestPerformers,
+  };
+}
+
+async function fetchPolymarketEvent(
+  slug: string,
+  marketType: 'first_song' | 'songs_played' | 'guest_performer'
+): Promise<MarketOdds[]> {
   try {
-    // Try to discover markets via Gamma API
-    const searchRes = await fetch(
-      `${POLYMARKET_GAMMA_API}/markets?_limit=200&active=true&closed=false&_sort=volumeNum&_order=desc`,
+    const res = await fetch(
+      `${POLYMARKET_GAMMA_API}/events?slug=${slug}`,
       { headers: { 'Accept': 'application/json' }, next: { revalidate: 15 } }
     );
 
-    if (!searchRes.ok) throw new Error(`Gamma API error: ${searchRes.status}`);
+    if (!res.ok) throw new Error(`Gamma API error: ${res.status}`);
 
-    const markets: GammaMarket[] = await searchRes.json();
+    const events: GammaEvent[] = await res.json();
+    if (!events.length || !events[0].markets) return [];
 
-    const firstSong: MarketOdds[] = [];
-    const songsPlayed: MarketOdds[] = [];
+    const odds: MarketOdds[] = [];
 
-    for (const market of markets) {
-      const q = (market.question || '').toLowerCase();
-      const isBadBunny = q.includes('bad bunny') || q.includes('halftime');
-      if (!isBadBunny) continue;
+    for (const market of events[0].markets) {
+      if (market.closed || !market.active) continue;
 
-      const isFirstSong = q.includes('first song') || q.includes('opening song');
-      const isSongsPlayed = q.includes('played') || q.includes('setlist') || q.includes('perform');
+      // Extract name from groupItemTitle or question
+      let name = market.groupItemTitle || market.question || market.slug;
+      // Clean up long question formats
+      if (name.length > 50) {
+        // Try to extract the key name from the question
+        const match = name.match(/Will (.+?) (?:be |perform|play)/i);
+        if (match) name = match[1];
+      }
 
-      let yesPrice = 0.5;
-      // Try CLOB price
-      try {
-        if (market.condition_id) {
-          const clobRes = await fetch(
-            `${POLYMARKET_CLOB_API}/markets/${market.condition_id}`,
-            { headers: { 'Accept': 'application/json' }, next: { revalidate: 15 } }
-          );
-          if (clobRes.ok) {
-            const clobData = await clobRes.json();
-            const prices = clobData.outcomePrices;
-            if (typeof prices === 'string') {
-              const parsed = JSON.parse(prices);
-              yesPrice = parseFloat(parsed[0]) || 0.5;
-            } else if (Array.isArray(prices)) {
-              yesPrice = parseFloat(prices[0]) || 0.5;
-            }
-          }
-        }
-      } catch { /* use default */ }
-
-      // Try outcomePrices from Gamma response
+      // Parse outcomePrices: "[yesPrice, noPrice]"
+      let yesPrice = 0;
+      let noPrice = 0;
       if (market.outcomePrices) {
         try {
           const parsed = JSON.parse(market.outcomePrices);
-          yesPrice = parseFloat(parsed[0]) || yesPrice;
-        } catch { /* keep existing */ }
+          yesPrice = parseFloat(parsed[0]) || 0;
+          noPrice = parseFloat(parsed[1]) || 0;
+        } catch { /* skip */ }
       }
 
-      const odds: MarketOdds = {
-        platform: 'polymarket',
-        song: market.question || market.slug,
-        marketType: isFirstSong ? 'first_song' : 'songs_played',
-        impliedProbability: yesPrice,
-        yesPrice,
-        noPrice: 1 - yesPrice,
-        volume: 0,
-        lastUpdated: new Date().toISOString(),
-      };
+      if (yesPrice === 0 && noPrice === 0) continue;
 
-      if (isFirstSong) firstSong.push(odds);
-      else if (isSongsPlayed) songsPlayed.push(odds);
+      const yes = makeSinglePriceSide(yesPrice);
+      const no = makeSinglePriceSide(noPrice);
+      const volume = parseFloat(market.volume || '0');
+
+      odds.push({
+        platform: 'polymarket',
+        song: name,
+        marketType,
+        impliedProbability: yesPrice,
+        yes,
+        no,
+        volume,
+        lastUpdated: new Date().toISOString(),
+      });
     }
 
-    // If no live markets found, use fallback
-    if (firstSong.length === 0) firstSong.push(...getPolymarketFallback('first_song'));
-    if (songsPlayed.length === 0) songsPlayed.push(...getPolymarketFallback('songs_played'));
-
-    return { firstSong, songsPlayed };
+    odds.sort((a, b) => b.impliedProbability - a.impliedProbability);
+    return odds;
   } catch (error) {
-    console.error('Polymarket fetch error:', error);
-    return {
-      firstSong: getPolymarketFallback('first_song'),
-      songsPlayed: getPolymarketFallback('songs_played'),
-    };
+    console.error(`Polymarket fetch error for ${slug}:`, error);
+    return [];
   }
-}
-
-function getPolymarketFallback(marketType: 'first_song' | 'songs_played'): MarketOdds[] {
-  // No Polymarket markets exist yet — return empty so dashboard shows "NO DATA"
-  return [];
 }
 
 // ============================================================================
@@ -250,23 +254,29 @@ export async function getMarketComparison(): Promise<MarketComparisonResponse> {
     fetchPolymarketOdds(),
   ]);
 
-  const allFirstSongMarkets = [...kalshi.firstSong, ...polymarket.firstSong];
-  const allSongsPlayedMarkets = [...kalshi.songsPlayed, ...polymarket.songsPlayed];
+  const allFirstSong = [...kalshi.firstSong, ...polymarket.firstSong];
+  const allSongsPlayed = [...kalshi.songsPlayed, ...polymarket.songsPlayed];
+  const allGuestPerformers = [...kalshi.guestPerformers, ...polymarket.guestPerformers];
 
-  const firstSongEdges = findAllEdges(allFirstSongMarkets);
-  const songsPlayedEdges = findAllEdges(allSongsPlayedMarkets);
+  const edges = [
+    ...findAllEdges(allFirstSong),
+    ...findAllEdges(allSongsPlayed),
+    ...findAllEdges(allGuestPerformers),
+  ];
 
   return {
     kalshi: {
       firstSong: kalshi.firstSong,
       songsPlayed: kalshi.songsPlayed,
+      guestPerformers: kalshi.guestPerformers,
     },
     polymarket: {
       firstSong: polymarket.firstSong,
       songsPlayed: polymarket.songsPlayed,
+      guestPerformers: polymarket.guestPerformers,
     },
     lastFetched: new Date().toISOString(),
-    edges: [...firstSongEdges, ...songsPlayedEdges],
+    edges,
   };
 }
 

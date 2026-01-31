@@ -178,6 +178,21 @@ export function findAllEdges(marketData: MarketOdds[]): EdgeCalculation[] {
         edge.song = market.song;
         edges.push(edge);
       }
+    } else if (mType === 'guest_performer') {
+      // For guest_performer, match against guests[] predictions
+      const guest = model.guests.find(
+        g => g.name.toLowerCase() === market.song.toLowerCase()
+      );
+      if (guest) {
+        const edge = calculateEdge(
+          guest.probability,
+          market.impliedProbability,
+          market.platform,
+          'guest_performer'
+        );
+        edge.song = market.song;
+        edges.push(edge);
+      }
     }
   }
 

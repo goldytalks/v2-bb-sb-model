@@ -23,8 +23,10 @@ export async function GET(request: NextRequest) {
     const allMarkets = [
       ...marketData.kalshi.firstSong,
       ...marketData.kalshi.songsPlayed,
+      ...marketData.kalshi.guestPerformers,
       ...marketData.polymarket.firstSong,
       ...marketData.polymarket.songsPlayed,
+      ...marketData.polymarket.guestPerformers,
     ];
     const edges = findAllEdges(allMarkets);
 

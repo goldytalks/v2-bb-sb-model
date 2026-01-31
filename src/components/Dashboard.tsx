@@ -11,38 +11,274 @@ interface DashboardProps {
   onOpenChat: () => void;
 }
 
-// Helper: find our model probability for a song (first_song predictions or setlist inclusion)
-function getOurProb(model: PredictionModel, song: string, marketType: 'first_song' | 'songs_played'): number | null {
+// ============================================================================
+// HELPERS
+// ============================================================================
+
+const formatPrice = (price: number): string => {
+  if (!price || isNaN(price)) return '—';
+  return `${(price * 100).toFixed(1)}¢`;
+};
+
+const formatPct = (prob: number): string => {
+  if (!prob || isNaN(prob)) return '—';
+  return `${(prob * 100).toFixed(0)}%`;
+};
+
+function getOurProb(model: PredictionModel, song: string, marketType: string): number | null {
   if (marketType === 'first_song') {
-    const p = model.firstSong.predictions.find(
-      s => s.song.toLowerCase() === song.toLowerCase()
-    );
+    const p = model.firstSong.predictions.find(s => s.song.toLowerCase() === song.toLowerCase());
     return p ? p.probability : null;
   }
-  const s = model.setlist.primary.find(
-    s => s.song.toLowerCase() === song.toLowerCase()
-  );
-  return s ? s.inclusionProbability : null;
+  if (marketType === 'songs_played') {
+    const s = model.setlist.primary.find(s => s.song.toLowerCase() === song.toLowerCase());
+    return s ? s.inclusionProbability : null;
+  }
+  if (marketType === 'guest_performer') {
+    const g = model.guests.find(g => g.name.toLowerCase() === song.toLowerCase());
+    return g ? g.probability : null;
+  }
+  return null;
 }
 
-// Helper: build rows from live MarketOdds[] + model
-function buildMarketRows(odds: MarketOdds[], model: PredictionModel) {
-  return odds.map(o => {
-    const ourProb = getOurProb(model, o.song, o.marketType);
-    const marketPct = Math.round(o.impliedProbability * 100);
-    const ourPct = ourProb !== null ? Math.round(ourProb * 100) : null;
-    const edge = ourPct !== null ? ourPct - marketPct : null;
-    return {
-      song: o.song.toUpperCase(),
-      market: marketPct,
-      ours: ourPct ?? 0,
-      edge: edge ?? 0,
-      yesPrice: o.yesPrice ?? o.impliedProbability,
-      noPrice: o.noPrice ?? (1 - o.impliedProbability),
-      volume: o.volume ?? 0,
-    };
-  }).sort((a, b) => b.market - a.market);
+// ============================================================================
+// SIGNAL BADGE (BUY_YES / BUY_NO / NO_EDGE)
+// ============================================================================
+
+function SignalBadge({ edge, modelProb, marketProb }: { edge: number; modelProb: number | null; marketProb: number }) {
+  if (modelProb === null) return <span className="text-xs text-terminal-dim">—</span>;
+  const rawEdge = modelProb - marketProb;
+  let direction: string;
+  let cls: string;
+  if (rawEdge > 0.03) { direction = 'BUY YES'; cls = 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40'; }
+  else if (rawEdge < -0.03) { direction = 'BUY NO'; cls = 'bg-red-500/20 text-red-400 border-red-500/40'; }
+  else { direction = 'NO EDGE'; cls = 'bg-zinc-700/30 text-zinc-500 border-zinc-600/30'; }
+  return <span className={`text-[10px] font-bold px-1.5 py-0.5 border ${cls}`}>{direction}</span>;
 }
+
+// ============================================================================
+// KALSHI MARKET ROW — YES/NO orderbook with bid/ask
+// ============================================================================
+
+function KalshiMarketRow({ market, modelProb }: { market: MarketOdds; modelProb: number | null }) {
+  const rawEdge = modelProb !== null ? modelProb - market.impliedProbability : 0;
+  const isNo = rawEdge < -0.03;
+  const edgePct = modelProb !== null ? Math.abs(rawEdge) * 100 : 0;
+  const hasEdge = modelProb !== null && Math.abs(rawEdge) > 0.03;
+
+  return (
+    <tr className={`border-b border-terminal-border/50 ${hasEdge ? 'bg-gold/5' : ''}`}>
+      {/* Song name */}
+      <td className="py-2 pr-2">
+        <div className="font-bold text-sm">{market.song}</div>
+      </td>
+      {/* YES Orderbook */}
+      <td className="py-2 px-1">
+        <div className="flex flex-col items-center gap-0.5">
+          <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider">YES</span>
+          <div className="flex items-center gap-1 text-xs">
+            <span className="text-emerald-400/70 font-mono">{formatPrice(market.yes.bid)}</span>
+            <span className="text-terminal-dim">/</span>
+            <span className="text-emerald-400 font-mono font-bold">{formatPrice(market.yes.ask)}</span>
+          </div>
+          <div className="text-[10px] text-terminal-dim font-mono">
+            {(market.yes.mid * 100).toFixed(0)}%
+          </div>
+        </div>
+      </td>
+      {/* NO Orderbook */}
+      <td className="py-2 px-1">
+        <div className="flex flex-col items-center gap-0.5">
+          <span className="text-[10px] font-bold text-red-400 uppercase tracking-wider">NO</span>
+          <div className="flex items-center gap-1 text-xs">
+            <span className="text-red-400/70 font-mono">{formatPrice(market.no.bid)}</span>
+            <span className="text-terminal-dim">/</span>
+            <span className="text-red-400 font-mono font-bold">{formatPrice(market.no.ask)}</span>
+          </div>
+          <div className="text-[10px] text-terminal-dim font-mono">
+            {(market.no.mid * 100).toFixed(0)}%
+          </div>
+        </div>
+      </td>
+      {/* Spread */}
+      <td className="py-2 px-1 text-center">
+        <div className="text-[10px] text-terminal-dim">spread</div>
+        <div className="text-xs font-mono text-terminal-dim">
+          {(market.yes.spread * 100).toFixed(0)}¢
+        </div>
+      </td>
+      {/* Model */}
+      <td className="py-2 px-2 text-right">
+        <div className={`text-[10px] ${isNo ? 'text-red-400/70' : 'text-terminal-dim'}`}>
+          {isNo ? 'NO model' : 'model'}
+        </div>
+        <div className={`font-mono text-sm ${isNo ? 'text-red-400' : ''}`}>
+          {modelProb !== null ? (isNo ? formatPct(1 - modelProb) : formatPct(modelProb)) : '—'}
+        </div>
+      </td>
+      {/* Edge */}
+      <td className="py-2 px-2 text-right">
+        <div className="text-[10px] text-terminal-dim">edge</div>
+        <span className={`font-mono text-sm font-bold ${hasEdge ? 'text-emerald-400' : 'text-terminal-dim'}`}>
+          {hasEdge ? '+' : ''}{edgePct.toFixed(1)}%
+        </span>
+      </td>
+      {/* Signal */}
+      <td className="py-2 pl-2 text-right">
+        <SignalBadge edge={rawEdge} modelProb={modelProb} marketProb={market.impliedProbability} />
+      </td>
+    </tr>
+  );
+}
+
+// ============================================================================
+// POLYMARKET MARKET ROW — YES/NO single price
+// ============================================================================
+
+function PolymarketMarketRow({ market, modelProb }: { market: MarketOdds; modelProb: number | null }) {
+  const rawEdge = modelProb !== null ? modelProb - market.impliedProbability : 0;
+  const isNo = rawEdge < -0.03;
+  const edgePct = modelProb !== null ? Math.abs(rawEdge) * 100 : 0;
+  const hasEdge = modelProb !== null && Math.abs(rawEdge) > 0.03;
+
+  return (
+    <tr className={`border-b border-terminal-border/50 ${hasEdge ? 'bg-purple-500/5' : ''}`}>
+      {/* Name */}
+      <td className="py-2 pr-2">
+        <div className="font-bold text-sm">{market.song}</div>
+      </td>
+      {/* YES Price */}
+      <td className="py-2 px-1">
+        <div className="flex flex-col items-center gap-0.5">
+          <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider">YES</span>
+          <div className="text-sm font-mono font-bold text-emerald-400">
+            {(market.yes.mid * 100).toFixed(0)}¢
+          </div>
+        </div>
+      </td>
+      {/* NO Price */}
+      <td className="py-2 px-1">
+        <div className="flex flex-col items-center gap-0.5">
+          <span className="text-[10px] font-bold text-red-400 uppercase tracking-wider">NO</span>
+          <div className="text-sm font-mono font-bold text-red-400">
+            {(market.no.mid * 100).toFixed(0)}¢
+          </div>
+        </div>
+      </td>
+      {/* Model */}
+      <td className="py-2 px-2 text-right">
+        <div className={`text-[10px] ${isNo ? 'text-red-400/70' : 'text-terminal-dim'}`}>
+          {isNo ? 'NO model' : 'model'}
+        </div>
+        <div className={`font-mono text-sm ${isNo ? 'text-red-400' : ''}`}>
+          {modelProb !== null ? (isNo ? formatPct(1 - modelProb) : formatPct(modelProb)) : '—'}
+        </div>
+      </td>
+      {/* Edge */}
+      <td className="py-2 px-2 text-right">
+        <div className="text-[10px] text-terminal-dim">edge</div>
+        <span className={`font-mono text-sm font-bold ${hasEdge ? 'text-emerald-400' : 'text-terminal-dim'}`}>
+          {hasEdge ? '+' : ''}{edgePct.toFixed(1)}%
+        </span>
+      </td>
+      {/* Volume */}
+      <td className="py-2 px-1 text-right">
+        <div className="text-[10px] text-terminal-dim">vol</div>
+        <div className="text-xs text-terminal-dim font-mono">
+          {market.volume > 0 ? `$${(market.volume / 1000).toFixed(0)}k` : '—'}
+        </div>
+      </td>
+      {/* Signal */}
+      <td className="py-2 pl-1 text-right">
+        <SignalBadge edge={rawEdge} modelProb={modelProb} marketProb={market.impliedProbability} />
+      </td>
+    </tr>
+  );
+}
+
+// ============================================================================
+// MARKET SECTION — one market category with Kalshi + Polymarket tables
+// ============================================================================
+
+function MarketSection({
+  title,
+  kalshiMarkets,
+  polymarketMarkets,
+  model,
+  marketType,
+  isLive,
+}: {
+  title: string;
+  kalshiMarkets: MarketOdds[];
+  polymarketMarkets: MarketOdds[];
+  model: PredictionModel;
+  marketType: string;
+  isLive: boolean;
+}) {
+  return (
+    <div className="border-b-2 border-terminal-border">
+      <div className="bg-gold text-terminal-bg px-4 py-3 font-bold flex justify-between items-center">
+        <span>{title}</span>
+        <LiveDot active={isLive} />
+      </div>
+      <div className="grid grid-cols-2">
+        {/* Kalshi side */}
+        <div className="border-r-2 border-terminal-border p-4">
+          <div className="text-terminal-dim text-xs mb-2 font-bold flex items-center gap-2">
+            <span className="bg-blue-500/20 text-blue-400 border border-blue-500/40 px-1.5 py-0.5 text-[10px]">KALSHI</span>
+            <span>{kalshiMarkets.length} markets</span>
+          </div>
+          {kalshiMarkets.length > 0 ? (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <tbody>
+                  {kalshiMarkets.slice(0, 15).map((m) => (
+                    <KalshiMarketRow
+                      key={m.song}
+                      market={m}
+                      modelProb={getOurProb(model, m.song, marketType)}
+                    />
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="text-terminal-dim text-sm py-4">NO KALSHI MARKETS</div>
+          )}
+        </div>
+
+        {/* Polymarket side */}
+        <div className="p-4">
+          <div className="text-terminal-dim text-xs mb-2 font-bold flex items-center gap-2">
+            <span className="bg-purple-500/20 text-purple-400 border border-purple-500/40 px-1.5 py-0.5 text-[10px]">POLYMARKET</span>
+            <span>{polymarketMarkets.length} markets</span>
+          </div>
+          {polymarketMarkets.length > 0 ? (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <tbody>
+                  {polymarketMarkets.slice(0, 15).map((m) => (
+                    <PolymarketMarketRow
+                      key={m.song}
+                      market={m}
+                      modelProb={getOurProb(model, m.song, marketType)}
+                    />
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="text-terminal-dim text-sm py-4">NO POLYMARKET MARKETS</div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// MAIN DASHBOARD
+// ============================================================================
 
 export default function Dashboard({ model, portfolio, markets, onOpenChat }: DashboardProps) {
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -111,77 +347,27 @@ export default function Dashboard({ model, portfolio, markets, onOpenChat }: Das
     return () => { window.removeEventListener('resize', resize); cancelAnimationFrame(animationId); };
   }, []);
 
-  // Derive live market rows from API data
-  const kalshiFirstSong = useMemo(() => markets ? buildMarketRows(markets.kalshi.firstSong, model) : [], [markets, model]);
-  const kalshiSongsPlayed = useMemo(() => markets ? buildMarketRows(markets.kalshi.songsPlayed, model) : [], [markets, model]);
-  const polyFirstSong = useMemo(() => markets ? buildMarketRows(markets.polymarket.firstSong, model) : [], [markets, model]);
-  const polySongsPlayed = useMemo(() => markets ? buildMarketRows(markets.polymarket.songsPlayed, model) : [], [markets, model]);
   const liveEdges: EdgeCalculation[] = markets?.edges ?? [];
-
-  // Build combined chart data: merge Kalshi + Polymarket for each song (first_song)
-  const firstSongChartData = useMemo(() => {
-    const songMap = new Map<string, { song: string; kalshiYes: number | null; polyYes: number | null; model: number }>();
-    for (const row of kalshiFirstSong) {
-      const key = row.song;
-      const existing = songMap.get(key) || { song: key, kalshiYes: null, polyYes: null, model: row.ours };
-      existing.kalshiYes = row.market;
-      existing.model = row.ours;
-      songMap.set(key, existing);
-    }
-    for (const row of polyFirstSong) {
-      const key = row.song;
-      const existing = songMap.get(key) || { song: key, kalshiYes: null, polyYes: null, model: row.ours };
-      existing.polyYes = row.market;
-      if (!existing.model) existing.model = row.ours;
-      songMap.set(key, existing);
-    }
-    return Array.from(songMap.values()).sort((a, b) => (b.kalshiYes ?? b.polyYes ?? 0) - (a.kalshiYes ?? a.polyYes ?? 0));
-  }, [kalshiFirstSong, polyFirstSong]);
-
-  // Songs played chart data
-  const songsPlayedChartData = useMemo(() => {
-    const songMap = new Map<string, { song: string; kalshi: number | null; poly: number | null; model: number }>();
-    for (const row of kalshiSongsPlayed) {
-      const key = row.song;
-      const existing = songMap.get(key) || { song: key, kalshi: null, poly: null, model: row.ours };
-      existing.kalshi = row.market;
-      existing.model = row.ours;
-      songMap.set(key, existing);
-    }
-    for (const row of polySongsPlayed) {
-      const key = row.song;
-      const existing = songMap.get(key) || { song: key, kalshi: null, poly: null, model: row.ours };
-      existing.poly = row.market;
-      if (!existing.model) existing.model = row.ours;
-      songMap.set(key, existing);
-    }
-    return Array.from(songMap.values()).sort((a, b) => (b.kalshi ?? b.poly ?? 0) - (a.kalshi ?? a.poly ?? 0));
-  }, [kalshiSongsPlayed, polySongsPlayed]);
-
-  // Top edge from live data
   const topLiveEdge = liveEdges.length > 0 ? liveEdges[0] : model.marketPositions.highConviction[0] ?? null;
-
   const daysUntil = Math.floor((new Date('2026-02-08').getTime() - currentTime.getTime()) / (1000 * 60 * 60 * 24));
+  const isLive = !!markets;
 
-  // Dynamic ticker from live data
+  // Ticker
   const tickerParts = [
-    `${model.firstSong.predictions[0].song} ${(model.firstSong.predictions[0].probability * 100).toFixed(0)}% ▲`,
-    kalshiFirstSong[0] ? `${kalshiFirstSong[0].song} KALSHI: ${kalshiFirstSong[0].market}%${kalshiFirstSong[0].edge < -10 ? ' [OVERPRICED]' : ''}` : null,
-    `BAILE CLOSER: ${(model.lastSong.predictions[0].probability * 100).toFixed(0)}%`,
-    `CARDI B: ${(model.guests[0].probability * 100).toFixed(0)}%`,
+    `${model.firstSong.predictions[0].song} ${(model.firstSong.predictions[0].probability * 100).toFixed(0)}%`,
+    markets?.kalshi.firstSong[0] ? `KALSHI #1: ${markets.kalshi.firstSong[0].song} ${(markets.kalshi.firstSong[0].impliedProbability * 100).toFixed(0)}%` : null,
+    markets?.polymarket.firstSong[0] ? `POLY #1: ${markets.polymarket.firstSong[0].song} ${(markets.polymarket.firstSong[0].impliedProbability * 100).toFixed(0)}%` : null,
     topLiveEdge ? `EDGE: ${topLiveEdge.recommendation.replace('_', ' ')} ${topLiveEdge.song} ${topLiveEdge.edge > 0 ? '+' : ''}${(topLiveEdge.edge * 100).toFixed(0)}%` : null,
     `MODEL v${model.meta.version}`,
     markets ? `UPDATED ${new Date(markets.lastFetched).toLocaleTimeString()}` : null,
-  ].filter(Boolean).join(' ◆ ');
-
-  const isLive = !!markets;
+  ].filter(Boolean).join(' \u25C6 ');
 
   return (
     <div className="max-w-[1600px] mx-auto">
       {/* Ticker */}
       <div className="bg-gold text-terminal-bg py-3 overflow-hidden border-b-2 border-gold-dark">
         <div className="animate-ticker whitespace-nowrap font-bold">
-          {tickerParts} ◆ {tickerParts}
+          {tickerParts} \u25C6 {tickerParts}
         </div>
       </div>
 
@@ -232,92 +418,41 @@ export default function Dashboard({ model, portfolio, markets, onOpenChat }: Das
         </div>
       </div>
 
-      {/* Markets Grid: Kalshi + Polymarket — LIVE DATA */}
-      <div className="grid grid-cols-2 border-b-2 border-terminal-border">
-        {/* Kalshi First Song */}
-        <div className="border-r-2 border-terminal-border">
-          <div className="bg-gold text-terminal-bg px-4 py-3 font-bold flex justify-between items-center">
-            <span>KALSHI_FIRST_SONG</span>
-            <LiveDot active={isLive} />
-          </div>
-          <div className="p-4 space-y-4">
-            {kalshiFirstSong.length > 0 ? kalshiFirstSong.map((item, i) => (
-              <MarketRow key={item.song} {...item} highlight={i === 0} />
-            )) : (
-              <div className="text-terminal-dim text-sm">LOADING KALSHI DATA...</div>
-            )}
-          </div>
-        </div>
+      {/* ================================================================== */}
+      {/* THREE MARKET SECTIONS — YES/NO ORDERBOOKS                         */}
+      {/* ================================================================== */}
 
-        {/* Polymarket First Song */}
-        <div>
-          <div className="bg-terminal-bg-alt text-terminal-fg px-4 py-3 font-bold flex justify-between items-center border-b-2 border-terminal-border">
-            <span>POLYMARKET_FIRST_SONG</span>
-            <LiveDot active={isLive} />
-          </div>
-          <div className="p-4 space-y-4">
-            {polyFirstSong.length > 0 ? polyFirstSong.map((item, i) => (
-              <MarketRow key={item.song} {...item} highlight={i === 0} />
-            )) : (
-              <div className="text-terminal-dim text-sm">LOADING POLYMARKET DATA...</div>
-            )}
-          </div>
-        </div>
-      </div>
+      {/* 1. FIRST SONG */}
+      <MarketSection
+        title="FIRST_SONG — What will Bad Bunny open with?"
+        kalshiMarkets={markets?.kalshi.firstSong ?? []}
+        polymarketMarkets={markets?.polymarket.firstSong ?? []}
+        model={model}
+        marketType="first_song"
+        isLive={isLive}
+      />
 
-      {/* Market Chart: YES/NO price bars side-by-side with model — LIVE DATA */}
-      <div className="border-b-2 border-terminal-border">
-        <div className="bg-gold text-terminal-bg px-4 py-3 font-bold flex justify-between items-center">
-          <span>MARKET_PRICES vs MODEL [YES / NO]</span>
-          {markets && <span className="text-xs font-normal">LAST UPDATE: {new Date(markets.lastFetched).toLocaleTimeString()}</span>}
-        </div>
-        <div className="p-4 grid grid-cols-2 gap-6">
-          <div>
-            <div className="text-terminal-dim text-xs mb-3">FIRST SONG — KALSHI vs POLYMARKET vs MODEL</div>
-            {firstSongChartData.map((item) => (
-              <div key={item.song} className="mb-3">
-                <div className="flex justify-between text-xs mb-1">
-                  <span>{item.song}</span>
-                  <span className="text-gold">MODEL {item.model}%</span>
-                </div>
-                <div className="flex gap-1 h-5">
-                  <div className="relative flex-1 bg-terminal-bg-alt border border-terminal-border overflow-hidden">
-                    <div className="h-full bg-gold/60" style={{ width: `${item.kalshiYes ?? 0}%` }} />
-                    <span className="absolute right-1 top-0 text-[10px] leading-5">K:{item.kalshiYes ?? '—'}%</span>
-                  </div>
-                  <div className="relative flex-1 bg-terminal-bg-alt border border-terminal-border overflow-hidden">
-                    <div className="h-full bg-status-success/40" style={{ width: `${item.polyYes ?? 0}%` }} />
-                    <span className="absolute right-1 top-0 text-[10px] leading-5">P:{item.polyYes ?? '—'}%</span>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-          <div>
-            <div className="text-terminal-dim text-xs mb-3">SONGS PLAYED — KALSHI vs POLYMARKET vs MODEL</div>
-            {songsPlayedChartData.map((item) => (
-              <div key={item.song} className="mb-3">
-                <div className="flex justify-between text-xs mb-1">
-                  <span>{item.song}</span>
-                  <span className="text-gold">MODEL {item.model}%</span>
-                </div>
-                <div className="flex gap-1 h-5">
-                  <div className="relative flex-1 bg-terminal-bg-alt border border-terminal-border overflow-hidden">
-                    <div className="h-full bg-gold/60" style={{ width: `${item.kalshi ?? 0}%` }} />
-                    <span className="absolute right-1 top-0 text-[10px] leading-5">K:{item.kalshi ?? '—'}%</span>
-                  </div>
-                  <div className="relative flex-1 bg-terminal-bg-alt border border-terminal-border overflow-hidden">
-                    <div className="h-full bg-status-success/40" style={{ width: `${item.poly ?? 0}%` }} />
-                    <span className="absolute right-1 top-0 text-[10px] leading-5">P:{item.poly ?? '—'}%</span>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
+      {/* 2. SONGS PLAYED */}
+      <MarketSection
+        title="SONGS_PLAYED — Will this song be performed?"
+        kalshiMarkets={markets?.kalshi.songsPlayed ?? []}
+        polymarketMarkets={markets?.polymarket.songsPlayed ?? []}
+        model={model}
+        marketType="songs_played"
+        isLive={isLive}
+      />
 
-      {/* Manifesto — LIVE DATA */}
+      {/* 3. GUEST PERFORMERS */}
+      <MarketSection
+        title="GUEST_PERFORMERS — Who will appear on stage?"
+        kalshiMarkets={markets?.kalshi.guestPerformers ?? []}
+        polymarketMarkets={markets?.polymarket.guestPerformers ?? []}
+        model={model}
+        marketType="guest_performer"
+        isLive={isLive}
+      />
+
+      {/* Manifesto */}
       <div className="p-6 text-2xl font-bold border-b-2 border-terminal-border">
         <span className="text-gold">&gt;</span> MODEL PREDICTION: <span className="text-gold">{model.firstSong.predictions[0].song}</span> TO OPEN<br />
         <span className="text-gold">&gt;</span> CONFIDENCE: <span className="text-status-success">{(model.meta.confidence * 100).toFixed(0)}%</span><br />
@@ -355,7 +490,7 @@ export default function Dashboard({ model, portfolio, markets, onOpenChat }: Das
         </div>
       </div>
 
-      {/* Trade Cards — from live edges */}
+      {/* Trade Cards */}
       <div className="grid grid-cols-4 border-b-2 border-terminal-border">
         {(liveEdges.length > 0
           ? liveEdges.filter(e => e.recommendation !== 'HOLD').slice(0, 4)
@@ -449,7 +584,10 @@ export default function Dashboard({ model, portfolio, markets, onOpenChat }: Das
   );
 }
 
-// Sub-components
+// ============================================================================
+// SUB-COMPONENTS
+// ============================================================================
+
 function NavItem({ children, active, onClick }: { children: React.ReactNode; active?: boolean; onClick?: () => void }) {
   return (
     <div
@@ -468,26 +606,6 @@ function LiveDot({ active }: { active?: boolean }) {
     <div className="flex items-center gap-2 text-sm">
       <div className={`live-dot ${active ? 'active' : 'cached'}`} />
       <span className={active ? 'text-terminal-bg' : 'text-terminal-dim'}>{active ? 'LIVE' : 'CACHED'}</span>
-    </div>
-  );
-}
-
-function MarketRow({ song, market, ours, edge, highlight }: { song: string; market: number; ours: number; edge: number; highlight?: boolean }) {
-  return (
-    <div>
-      <div className="flex justify-between mb-1 text-sm">
-        <span className={highlight ? 'text-gold' : ''}>{highlight && '► '}{song}</span>
-        <div className="flex gap-4">
-          <span className="text-gold font-bold">{market}%</span>
-          <span className="text-terminal-dim">{ours}%</span>
-          <span className={edge > 0 ? 'text-status-success' : edge < 0 ? 'text-status-danger' : 'text-terminal-dim'}>
-            {edge > 0 ? '+' : ''}{edge}%
-          </span>
-        </div>
-      </div>
-      <div className="probability-bar">
-        <div className="probability-bar-fill" style={{ width: `${market}%` }} />
-      </div>
     </div>
   );
 }
