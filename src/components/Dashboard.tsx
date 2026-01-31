@@ -1,16 +1,50 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { MessageCircle } from 'lucide-react';
-import type { PredictionModel, PortfolioAnalysis } from '@/types';
+import type { PredictionModel, PortfolioAnalysis, MarketComparisonResponse, MarketOdds, EdgeCalculation } from '@/types';
 
 interface DashboardProps {
   model: PredictionModel;
   portfolio: PortfolioAnalysis | null;
+  markets: MarketComparisonResponse | null;
   onOpenChat: () => void;
 }
 
-export default function Dashboard({ model, portfolio, onOpenChat }: DashboardProps) {
+// Helper: find our model probability for a song (first_song predictions or setlist inclusion)
+function getOurProb(model: PredictionModel, song: string, marketType: 'first_song' | 'songs_played'): number | null {
+  if (marketType === 'first_song') {
+    const p = model.firstSong.predictions.find(
+      s => s.song.toLowerCase() === song.toLowerCase()
+    );
+    return p ? p.probability : null;
+  }
+  const s = model.setlist.primary.find(
+    s => s.song.toLowerCase() === song.toLowerCase()
+  );
+  return s ? s.inclusionProbability : null;
+}
+
+// Helper: build rows from live MarketOdds[] + model
+function buildMarketRows(odds: MarketOdds[], model: PredictionModel) {
+  return odds.map(o => {
+    const ourProb = getOurProb(model, o.song, o.marketType);
+    const marketPct = Math.round(o.impliedProbability * 100);
+    const ourPct = ourProb !== null ? Math.round(ourProb * 100) : null;
+    const edge = ourPct !== null ? ourPct - marketPct : null;
+    return {
+      song: o.song.toUpperCase(),
+      market: marketPct,
+      ours: ourPct ?? 0,
+      edge: edge ?? 0,
+      yesPrice: o.yesPrice ?? o.impliedProbability,
+      noPrice: o.noPrice ?? (1 - o.impliedProbability),
+      volume: o.volume ?? 0,
+    };
+  }).sort((a, b) => b.market - a.market);
+}
+
+export default function Dashboard({ model, portfolio, markets, onOpenChat }: DashboardProps) {
   const [currentTime, setCurrentTime] = useState(new Date());
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -23,13 +57,11 @@ export default function Dashboard({ model, portfolio, onOpenChat }: DashboardPro
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
     let animationId: number;
     let data: number[] = [];
-
     for (let i = 0; i < 100; i++) {
       data.push(50 + Math.sin(i * 0.1) * 20 + (Math.random() - 0.5) * 10);
     }
@@ -41,42 +73,22 @@ export default function Dashboard({ model, portfolio, onOpenChat }: DashboardPro
 
       ctx.fillStyle = '#0A0A0A';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
-
       ctx.strokeStyle = '#333333';
       ctx.lineWidth = 1;
-      for (let i = 0; i < canvas.width; i += 30) {
-        ctx.beginPath();
-        ctx.moveTo(i, 0);
-        ctx.lineTo(i, canvas.height);
-        ctx.stroke();
-      }
-      for (let i = 0; i < canvas.height; i += 30) {
-        ctx.beginPath();
-        ctx.moveTo(0, i);
-        ctx.lineTo(canvas.width, i);
-        ctx.stroke();
-      }
+      for (let i = 0; i < canvas.width; i += 30) { ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, canvas.height); ctx.stroke(); }
+      for (let i = 0; i < canvas.height; i += 30) { ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(canvas.width, i); ctx.stroke(); }
 
       const stepX = canvas.width / (data.length - 1);
-
       ctx.strokeStyle = 'rgba(255, 215, 0, 0.3)';
       ctx.lineWidth = 8;
       ctx.beginPath();
-      data.forEach((v, i) => {
-        const x = i * stepX;
-        const y = canvas.height - (v / 100) * canvas.height;
-        i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
-      });
+      data.forEach((v, i) => { const x = i * stepX; const y = canvas.height - (v / 100) * canvas.height; i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y); });
       ctx.stroke();
 
       ctx.strokeStyle = '#FFD700';
       ctx.lineWidth = 3;
       ctx.beginPath();
-      data.forEach((v, i) => {
-        const x = i * stepX;
-        const y = canvas.height - (v / 100) * canvas.height;
-        i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
-      });
+      data.forEach((v, i) => { const x = i * stepX; const y = canvas.height - (v / 100) * canvas.height; i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y); });
       ctx.stroke();
 
       const currentVal = data[data.length - 1];
@@ -93,35 +105,83 @@ export default function Dashboard({ model, portfolio, onOpenChat }: DashboardPro
       canvas.width = canvas.parentElement?.clientWidth || 400;
       canvas.height = canvas.parentElement?.clientHeight || 300;
     };
-
     resize();
     window.addEventListener('resize', resize);
     draw();
-
-    return () => {
-      window.removeEventListener('resize', resize);
-      cancelAnimationFrame(animationId);
-    };
+    return () => { window.removeEventListener('resize', resize); cancelAnimationFrame(animationId); };
   }, []);
+
+  // Derive live market rows from API data
+  const kalshiFirstSong = useMemo(() => markets ? buildMarketRows(markets.kalshi.firstSong, model) : [], [markets, model]);
+  const kalshiSongsPlayed = useMemo(() => markets ? buildMarketRows(markets.kalshi.songsPlayed, model) : [], [markets, model]);
+  const polyFirstSong = useMemo(() => markets ? buildMarketRows(markets.polymarket.firstSong, model) : [], [markets, model]);
+  const polySongsPlayed = useMemo(() => markets ? buildMarketRows(markets.polymarket.songsPlayed, model) : [], [markets, model]);
+  const liveEdges: EdgeCalculation[] = markets?.edges ?? [];
+
+  // Build combined chart data: merge Kalshi + Polymarket for each song (first_song)
+  const firstSongChartData = useMemo(() => {
+    const songMap = new Map<string, { song: string; kalshiYes: number | null; polyYes: number | null; model: number }>();
+    for (const row of kalshiFirstSong) {
+      const key = row.song;
+      const existing = songMap.get(key) || { song: key, kalshiYes: null, polyYes: null, model: row.ours };
+      existing.kalshiYes = row.market;
+      existing.model = row.ours;
+      songMap.set(key, existing);
+    }
+    for (const row of polyFirstSong) {
+      const key = row.song;
+      const existing = songMap.get(key) || { song: key, kalshiYes: null, polyYes: null, model: row.ours };
+      existing.polyYes = row.market;
+      if (!existing.model) existing.model = row.ours;
+      songMap.set(key, existing);
+    }
+    return Array.from(songMap.values()).sort((a, b) => (b.kalshiYes ?? b.polyYes ?? 0) - (a.kalshiYes ?? a.polyYes ?? 0));
+  }, [kalshiFirstSong, polyFirstSong]);
+
+  // Songs played chart data
+  const songsPlayedChartData = useMemo(() => {
+    const songMap = new Map<string, { song: string; kalshi: number | null; poly: number | null; model: number }>();
+    for (const row of kalshiSongsPlayed) {
+      const key = row.song;
+      const existing = songMap.get(key) || { song: key, kalshi: null, poly: null, model: row.ours };
+      existing.kalshi = row.market;
+      existing.model = row.ours;
+      songMap.set(key, existing);
+    }
+    for (const row of polySongsPlayed) {
+      const key = row.song;
+      const existing = songMap.get(key) || { song: key, kalshi: null, poly: null, model: row.ours };
+      existing.poly = row.market;
+      if (!existing.model) existing.model = row.ours;
+      songMap.set(key, existing);
+    }
+    return Array.from(songMap.values()).sort((a, b) => (b.kalshi ?? b.poly ?? 0) - (a.kalshi ?? a.poly ?? 0));
+  }, [kalshiSongsPlayed, polySongsPlayed]);
+
+  // Top edge from live data
+  const topLiveEdge = liveEdges.length > 0 ? liveEdges[0] : model.marketPositions.highConviction[0] ?? null;
 
   const daysUntil = Math.floor((new Date('2026-02-08').getTime() - currentTime.getTime()) / (1000 * 60 * 60 * 24));
 
-  const topEdge = model.marketPositions.highConviction[0];
-  const tickerContent = [
+  // Dynamic ticker from live data
+  const tickerParts = [
     `${model.firstSong.predictions[0].song} ${(model.firstSong.predictions[0].probability * 100).toFixed(0)}% ▲`,
-    `NUEVAYOL KALSHI: 56% [OVERPRICED]`,
-    `BAILE CLOSER: 65%`,
-    `CARDI B: 75%`,
-    topEdge ? `EDGE: ${topEdge.recommendation} ${topEdge.song} ${topEdge.edge > 0 ? '+' : ''}${(topEdge.edge * 100).toFixed(0)}%` : '',
+    kalshiFirstSong[0] ? `${kalshiFirstSong[0].song} KALSHI: ${kalshiFirstSong[0].market}%${kalshiFirstSong[0].edge < -10 ? ' [OVERPRICED]' : ''}` : null,
+    `BAILE CLOSER: ${(model.lastSong.predictions[0].probability * 100).toFixed(0)}%`,
+    `CARDI B: ${(model.guests[0].probability * 100).toFixed(0)}%`,
+    topLiveEdge ? `EDGE: ${topLiveEdge.recommendation.replace('_', ' ')} ${topLiveEdge.song} ${topLiveEdge.edge > 0 ? '+' : ''}${(topLiveEdge.edge * 100).toFixed(0)}%` : null,
     `MODEL v${model.meta.version}`,
+    markets ? `UPDATED ${new Date(markets.lastFetched).toLocaleTimeString()}` : null,
   ].filter(Boolean).join(' ◆ ');
+
+  const isLive = !!markets;
 
   return (
     <div className="max-w-[1600px] mx-auto">
       {/* Ticker */}
       <div className="bg-gold text-terminal-bg py-3 overflow-hidden border-b-2 border-gold-dark">
         <div className="animate-ticker whitespace-nowrap font-bold">
-          {tickerContent} ◆ {tickerContent}
+          {tickerParts} ◆ {tickerParts}
         </div>
       </div>
 
@@ -158,9 +218,7 @@ export default function Dashboard({ model, portfolio, onOpenChat }: DashboardPro
           </p>
           <div className="flex gap-4">
             <button className="btn-terminal">VIEW MODEL</button>
-            <button className="btn-terminal" style={{ boxShadow: '4px 4px 0 #B8860B' }}>
-              EXPORT
-            </button>
+            <button className="btn-terminal" style={{ boxShadow: '4px 4px 0 #B8860B' }}>EXPORT</button>
           </div>
         </div>
         <div className="relative">
@@ -174,59 +232,49 @@ export default function Dashboard({ model, portfolio, onOpenChat }: DashboardPro
         </div>
       </div>
 
-      {/* Markets Grid: Kalshi + Polymarket */}
+      {/* Markets Grid: Kalshi + Polymarket — LIVE DATA */}
       <div className="grid grid-cols-2 border-b-2 border-terminal-border">
-        {/* Kalshi */}
+        {/* Kalshi First Song */}
         <div className="border-r-2 border-terminal-border">
           <div className="bg-gold text-terminal-bg px-4 py-3 font-bold flex justify-between items-center">
             <span>KALSHI_FIRST_SONG</span>
-            <LiveDot active />
+            <LiveDot active={isLive} />
           </div>
           <div className="p-4 space-y-4">
-            {[
-              { song: 'NUEVAYOL', market: 56, ours: 20, edge: -36 },
-              { song: 'TITÍ ME PREGUNTÓ', market: 26, ours: 28, edge: 2 },
-              { song: 'LA MUDANZA', market: 21, ours: 5, edge: -16 },
-              { song: 'DÁKITI', market: 13, ours: 12, edge: -1 },
-              { song: 'BAILE INOLVIDABLE', market: 11, ours: 12, edge: 1 },
-            ].map((item, i) => (
+            {kalshiFirstSong.length > 0 ? kalshiFirstSong.map((item, i) => (
               <MarketRow key={item.song} {...item} highlight={i === 0} />
-            ))}
+            )) : (
+              <div className="text-terminal-dim text-sm">LOADING KALSHI DATA...</div>
+            )}
           </div>
         </div>
 
-        {/* Polymarket */}
+        {/* Polymarket First Song */}
         <div>
           <div className="bg-terminal-bg-alt text-terminal-fg px-4 py-3 font-bold flex justify-between items-center border-b-2 border-terminal-border">
             <span>POLYMARKET_FIRST_SONG</span>
-            <LiveDot active />
+            <LiveDot active={isLive} />
           </div>
           <div className="p-4 space-y-4">
-            {[
-              { song: 'NUEVAYOL', market: 52, ours: 20, edge: -32 },
-              { song: 'TITÍ ME PREGUNTÓ', market: 28, ours: 28, edge: 0 },
-              { song: 'DÁKITI', market: 10, ours: 12, edge: 2 },
-            ].map((item, i) => (
+            {polyFirstSong.length > 0 ? polyFirstSong.map((item, i) => (
               <MarketRow key={item.song} {...item} highlight={i === 0} />
-            ))}
+            )) : (
+              <div className="text-terminal-dim text-sm">LOADING POLYMARKET DATA...</div>
+            )}
           </div>
         </div>
       </div>
 
-      {/* Market Chart: YES/NO price bars side-by-side with model */}
+      {/* Market Chart: YES/NO price bars side-by-side with model — LIVE DATA */}
       <div className="border-b-2 border-terminal-border">
-        <div className="bg-gold text-terminal-bg px-4 py-3 font-bold">
-          MARKET_PRICES vs MODEL [YES / NO]
+        <div className="bg-gold text-terminal-bg px-4 py-3 font-bold flex justify-between items-center">
+          <span>MARKET_PRICES vs MODEL [YES / NO]</span>
+          {markets && <span className="text-xs font-normal">LAST UPDATE: {new Date(markets.lastFetched).toLocaleTimeString()}</span>}
         </div>
         <div className="p-4 grid grid-cols-2 gap-6">
           <div>
-            <div className="text-terminal-dim text-xs mb-3">KALSHI YES PRICE vs MODEL</div>
-            {[
-              { song: 'NUEVAYOL', kalshiYes: 56, polyYes: 52, model: 20 },
-              { song: 'TITÍ', kalshiYes: 26, polyYes: 28, model: 28 },
-              { song: 'DÁKITI', kalshiYes: 13, polyYes: 10, model: 12 },
-              { song: 'BAILE', kalshiYes: 11, polyYes: null, model: 12 },
-            ].map((item) => (
+            <div className="text-terminal-dim text-xs mb-3">FIRST SONG — KALSHI vs POLYMARKET vs MODEL</div>
+            {firstSongChartData.map((item) => (
               <div key={item.song} className="mb-3">
                 <div className="flex justify-between text-xs mb-1">
                   <span>{item.song}</span>
@@ -234,11 +282,11 @@ export default function Dashboard({ model, portfolio, onOpenChat }: DashboardPro
                 </div>
                 <div className="flex gap-1 h-5">
                   <div className="relative flex-1 bg-terminal-bg-alt border border-terminal-border overflow-hidden">
-                    <div className="h-full bg-gold/60" style={{ width: `${item.kalshiYes}%` }} />
-                    <span className="absolute right-1 top-0 text-[10px] leading-5">K:{item.kalshiYes}%</span>
+                    <div className="h-full bg-gold/60" style={{ width: `${item.kalshiYes ?? 0}%` }} />
+                    <span className="absolute right-1 top-0 text-[10px] leading-5">K:{item.kalshiYes ?? '—'}%</span>
                   </div>
                   <div className="relative flex-1 bg-terminal-bg-alt border border-terminal-border overflow-hidden">
-                    <div className="h-full bg-status-success/40" style={{ width: `${item.polyYes || 0}%` }} />
+                    <div className="h-full bg-status-success/40" style={{ width: `${item.polyYes ?? 0}%` }} />
                     <span className="absolute right-1 top-0 text-[10px] leading-5">P:{item.polyYes ?? '—'}%</span>
                   </div>
                 </div>
@@ -246,14 +294,8 @@ export default function Dashboard({ model, portfolio, onOpenChat }: DashboardPro
             ))}
           </div>
           <div>
-            <div className="text-terminal-dim text-xs mb-3">SONGS PLAYED — KALSHI vs POLYMARKET</div>
-            {[
-              { song: 'DÁKITI', kalshi: 92, poly: 90, model: 95 },
-              { song: 'BAILE', kalshi: 88, poly: null, model: 90 },
-              { song: 'TITÍ', kalshi: 85, poly: 82, model: 75 },
-              { song: 'ME PORTO BONITO', kalshi: 80, poly: 78, model: 85 },
-              { song: 'DTMF', kalshi: 75, poly: null, model: 80 },
-            ].map((item) => (
+            <div className="text-terminal-dim text-xs mb-3">SONGS PLAYED — KALSHI vs POLYMARKET vs MODEL</div>
+            {songsPlayedChartData.map((item) => (
               <div key={item.song} className="mb-3">
                 <div className="flex justify-between text-xs mb-1">
                   <span>{item.song}</span>
@@ -261,11 +303,11 @@ export default function Dashboard({ model, portfolio, onOpenChat }: DashboardPro
                 </div>
                 <div className="flex gap-1 h-5">
                   <div className="relative flex-1 bg-terminal-bg-alt border border-terminal-border overflow-hidden">
-                    <div className="h-full bg-gold/60" style={{ width: `${item.kalshi}%` }} />
-                    <span className="absolute right-1 top-0 text-[10px] leading-5">K:{item.kalshi}%</span>
+                    <div className="h-full bg-gold/60" style={{ width: `${item.kalshi ?? 0}%` }} />
+                    <span className="absolute right-1 top-0 text-[10px] leading-5">K:{item.kalshi ?? '—'}%</span>
                   </div>
                   <div className="relative flex-1 bg-terminal-bg-alt border border-terminal-border overflow-hidden">
-                    <div className="h-full bg-status-success/40" style={{ width: `${item.poly || 0}%` }} />
+                    <div className="h-full bg-status-success/40" style={{ width: `${item.poly ?? 0}%` }} />
                     <span className="absolute right-1 top-0 text-[10px] leading-5">P:{item.poly ?? '—'}%</span>
                   </div>
                 </div>
@@ -275,11 +317,18 @@ export default function Dashboard({ model, portfolio, onOpenChat }: DashboardPro
         </div>
       </div>
 
-      {/* Manifesto */}
+      {/* Manifesto — LIVE DATA */}
       <div className="p-6 text-2xl font-bold border-b-2 border-terminal-border">
         <span className="text-gold">&gt;</span> MODEL PREDICTION: <span className="text-gold">{model.firstSong.predictions[0].song}</span> TO OPEN<br />
         <span className="text-gold">&gt;</span> CONFIDENCE: <span className="text-status-success">{(model.meta.confidence * 100).toFixed(0)}%</span><br />
-        <span className="text-gold">&gt;</span> BIGGEST EDGE: <span className="text-status-danger">BUY NO NUEVAYOL @ 56%</span>
+        <span className="text-gold">&gt;</span> BIGGEST EDGE:{' '}
+        {topLiveEdge ? (
+          <span className={topLiveEdge.edge > 0 ? 'text-status-success' : 'text-status-danger'}>
+            {topLiveEdge.recommendation.replace('_', ' ')} {topLiveEdge.song} @ {(topLiveEdge.marketProbability * 100).toFixed(0)}%
+          </span>
+        ) : (
+          <span className="text-terminal-dim">CALCULATING...</span>
+        )}
       </div>
 
       {/* Setlist + Guests */}
@@ -294,7 +343,6 @@ export default function Dashboard({ model, portfolio, onOpenChat }: DashboardPro
             ))}
           </div>
         </div>
-
         <div>
           <div className="bg-terminal-bg-alt px-4 py-3 font-bold border-b-2 border-terminal-border">
             GUEST_APPEARANCES
@@ -307,13 +355,13 @@ export default function Dashboard({ model, portfolio, onOpenChat }: DashboardPro
         </div>
       </div>
 
-      {/* Trade Cards */}
+      {/* Trade Cards — from live edges */}
       <div className="grid grid-cols-4 border-b-2 border-terminal-border">
-        {model.marketPositions.highConviction.slice(0, 3).map((pos) => (
-          <TradeCard key={pos.song} {...pos} />
-        ))}
-        {model.marketPositions.valuePlays.slice(0, 1).map((pos) => (
-          <TradeCard key={pos.song} {...pos} />
+        {(liveEdges.length > 0
+          ? liveEdges.filter(e => e.recommendation !== 'HOLD').slice(0, 4)
+          : [...model.marketPositions.highConviction.slice(0, 3), ...model.marketPositions.valuePlays.slice(0, 1)]
+        ).map((pos) => (
+          <TradeCard key={`${pos.song}-${pos.platform}-${pos.marketType}`} {...pos} />
         ))}
       </div>
 
@@ -393,7 +441,7 @@ export default function Dashboard({ model, portfolio, onOpenChat }: DashboardPro
           <span>SESSION: {currentTime.toISOString().split('T')[0]}</span>
         </div>
         <div className="flex gap-8">
-          <span>REFRESH: 60s</span>
+          <span>REFRESH: 15s</span>
           <span>{currentTime.toLocaleTimeString()}</span>
         </div>
       </footer>
@@ -431,6 +479,7 @@ function MarketRow({ song, market, ours, edge, highlight }: { song: string; mark
         <span className={highlight ? 'text-gold' : ''}>{highlight && '► '}{song}</span>
         <div className="flex gap-4">
           <span className="text-gold font-bold">{market}%</span>
+          <span className="text-terminal-dim">{ours}%</span>
           <span className={edge > 0 ? 'text-status-success' : edge < 0 ? 'text-status-danger' : 'text-terminal-dim'}>
             {edge > 0 ? '+' : ''}{edge}%
           </span>
@@ -487,7 +536,7 @@ function GuestRow({ name, probability, associatedSong }: { name: string; probabi
   );
 }
 
-function TradeCard({ song, ourProbability, marketProbability, platform, edge, recommendation, confidence }: {
+function TradeCard({ song, ourProbability, marketProbability, platform, edge, recommendation, confidence, marketType }: {
   song: string;
   ourProbability: number;
   marketProbability: number;
@@ -495,6 +544,7 @@ function TradeCard({ song, ourProbability, marketProbability, platform, edge, re
   edge: number;
   recommendation: string;
   confidence: string;
+  marketType?: string;
 }) {
   const isBuyYes = recommendation === 'BUY_YES';
   const isBuyNo = recommendation === 'BUY_NO';
@@ -510,7 +560,8 @@ function TradeCard({ song, ourProbability, marketProbability, platform, edge, re
         {recommendation.replace('_', ' ')}
       </div>
       <div className="font-bold text-sm">{song}</div>
-      <div className="text-terminal-dim text-xs mb-3">{platform}</div>
+      <div className="text-terminal-dim text-xs mb-1">{platform}</div>
+      {marketType && <div className="text-terminal-dim text-[10px] mb-2">{marketType.replace('_', ' ').toUpperCase()}</div>}
       <div className="grid grid-cols-2 gap-2 text-xs mb-3">
         <div>
           <div className="text-terminal-dim">MARKET</div>

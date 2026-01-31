@@ -3,30 +3,31 @@
 import { useState, useEffect, useCallback } from 'react';
 import Dashboard from '@/components/Dashboard';
 import ChatBot from '@/components/ChatBot';
-import type { PredictionModel, PortfolioAnalysis } from '@/types';
+import type { PredictionModel, PortfolioAnalysis, MarketComparisonResponse } from '@/types';
 
 export default function Home() {
   const [model, setModel] = useState<PredictionModel | null>(null);
   const [portfolio, setPortfolio] = useState<PortfolioAnalysis | null>(null);
+  const [markets, setMarkets] = useState<MarketComparisonResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [chatOpen, setChatOpen] = useState(false);
 
   const fetchData = useCallback(async () => {
     try {
-      const [modelRes, portfolioRes] = await Promise.all([
+      const [modelRes, portfolioRes, marketsRes] = await Promise.all([
         fetch('/api/predictions'),
         fetch('/api/portfolio'),
+        fetch('/api/markets'),
       ]);
 
       const modelData = await modelRes.json();
-      if (modelData.success) {
-        setModel(modelData.data);
-      }
+      if (modelData.success) setModel(modelData.data);
 
       const portfolioData = await portfolioRes.json();
-      if (portfolioData.success) {
-        setPortfolio(portfolioData.data);
-      }
+      if (portfolioData.success) setPortfolio(portfolioData.data);
+
+      const marketsData = await marketsRes.json();
+      if (marketsData.success) setMarkets(marketsData.data);
     } catch (error) {
       console.error('Failed to fetch data:', error);
     } finally {
@@ -37,8 +38,8 @@ export default function Home() {
   useEffect(() => {
     fetchData();
 
-    // Poll every 60 seconds — cloud-only, no local dependency
-    const interval = setInterval(fetchData, 60000);
+    // Poll every 15 seconds — cloud-only live refresh
+    const interval = setInterval(fetchData, 15000);
     return () => clearInterval(interval);
   }, [fetchData]);
 
@@ -66,7 +67,7 @@ export default function Home() {
 
   return (
     <main className="min-h-screen">
-      <Dashboard model={model} portfolio={portfolio} onOpenChat={() => setChatOpen(true)} />
+      <Dashboard model={model} portfolio={portfolio} markets={markets} onOpenChat={() => setChatOpen(true)} />
       <ChatBot isOpen={chatOpen} onClose={() => setChatOpen(false)} />
     </main>
   );

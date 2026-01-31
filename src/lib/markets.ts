@@ -31,7 +31,7 @@ export async function fetchKalshiOdds(): Promise<{
       `${KALSHI_API}/markets?series_ticker=SBLX`,
       {
         headers: { 'Accept': 'application/json' },
-        next: { revalidate: 60 },
+        next: { revalidate: 15 },
       }
     );
 
@@ -133,7 +133,7 @@ export async function fetchPolymarketOdds(): Promise<{
     // Discover markets via Gamma API
     const searchRes = await fetch(
       `${POLYMARKET_GAMMA_API}/markets?tag=super-bowl&closed=false&limit=50`,
-      { headers: { 'Accept': 'application/json' }, next: { revalidate: 60 } }
+      { headers: { 'Accept': 'application/json' }, next: { revalidate: 15 } }
     );
 
     if (!searchRes.ok) throw new Error(`Gamma API error: ${searchRes.status}`);
@@ -157,7 +157,7 @@ export async function fetchPolymarketOdds(): Promise<{
         if (market.condition_id) {
           const clobRes = await fetch(
             `${POLYMARKET_CLOB_API}/markets/${market.condition_id}`,
-            { headers: { 'Accept': 'application/json' }, next: { revalidate: 60 } }
+            { headers: { 'Accept': 'application/json' }, next: { revalidate: 15 } }
           );
           if (clobRes.ok) {
             const clobData = await clobRes.json();

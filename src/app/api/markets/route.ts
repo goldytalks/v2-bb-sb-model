@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { getMarketComparison } from '@/lib/markets';
 
 export const dynamic = 'force-dynamic';
-export const revalidate = 60; // Cache for 60 seconds
+export const revalidate = 15; // Cache for 15 seconds
 
 export async function GET() {
   try {
