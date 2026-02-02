@@ -23,115 +23,145 @@
     "predictions": [
       {
         "rank": 1,
-        "song": "Tití Me Preguntó",
-        "album": "Un Verano Sin Ti",
-        "probability": 0.25,
-        "confidence": "high",
-        "reasoning": "Proven Coachella 2023 opener; 1.89B streams; instant stadium singalong; matches SB pattern (73% open with top-5 recognizable hit). Not current album but still his go-to opener.",
-        "factors": {
-          "streaming": 92,
-          "concert": 98,
-          "sbSuitability": 90,
-          "cultural": 85,
-          "albumPush": 50
-        }
-      },
-      {
-        "rank": 2,
         "song": "NuevaYol",
         "album": "DeBÍ TiRAR MáS FOToS",
-        "probability": 0.20,
-        "confidence": "medium",
-        "reasoning": "Cultural statement (Puerto Rican flag video); current album lead push; but only ~400M streams (not top-20 all-time); limited stadium opener precedent. Market favorite at 56% is overpriced.",
+        "probability": 0.25,
+        "confidence": "high",
+        "reasoning": "His go-to DtMF-era televised opener: opened Tonight Show (Jan 2025) and SNL S50 Finale (May 2025) with it. Cultural statement (PR flag video). SB pattern supports statement/current-era openers (Kendrick 2025 opened with unreleased material). Market at 56% is still overpriced but less than previously modeled.",
         "factors": {
           "streaming": 50,
-          "concert": 68,
-          "sbSuitability": 86,
-          "cultural": 92,
-          "albumPush": 98
-        }
-      },
-      {
-        "rank": 3,
-        "song": "DtMF",
-        "album": "DeBÍ TiRAR MáS FOToS",
-        "probability": 0.15,
-        "confidence": "medium",
-        "reasoning": "Biggest current hit (#2 Hot 100); historic Grammy noms (ROTY/SOTY/AOTY); massive cultural moment. BUT emotional mid-tempo ballad—atypical opener energy. More likely as emotional peak mid-set.",
-        "factors": {
-          "streaming": 78,
-          "concert": 45,
-          "sbSuitability": 60,
+          "concert": 92,
+          "sbSuitability": 88,
           "cultural": 95,
           "albumPush": 98
         }
       },
       {
-        "rank": 4,
-        "song": "El Clúb",
-        "album": "DeBÍ TiRAR MáS FOToS",
-        "probability": 0.13,
+        "rank": 2,
+        "song": "Tití Me Preguntó",
+        "album": "Un Verano Sin Ti",
+        "probability": 0.20,
         "confidence": "medium",
-        "reasoning": "Lead single from current album; house/EDM production translates to stadium energy; clean; political undertones. Lower streams than competitors.",
+        "reasoning": "1.89B streams; instant crowd singalong; Coachella 2023 opener + VMAs 2022. BUT: he has NOT opened a special performance with this since 2023. His pattern has clearly shifted to DtMF-era material. SB pattern shows artists rarely open with #1 biggest hit (only Weeknd with Starboy qualifies).",
         "factors": {
-          "streaming": 45,
-          "concert": 60,
-          "sbSuitability": 82,
-          "cultural": 70,
-          "albumPush": 95
+          "streaming": 92,
+          "concert": 72,
+          "sbSuitability": 90,
+          "cultural": 82,
+          "albumPush": 25
+        }
+      },
+      {
+        "rank": 3,
+        "song": "La Mudanza",
+        "album": "DeBÍ TiRAR MáS FOToS",
+        "probability": 0.15,
+        "confidence": "medium",
+        "reasoning": "CURRENT DtMF World Tour opener (Nov 2025+). Tour openers frequently carry to major events. High energy, sets the tone. Kalshi has it at ~21% (market sees it too). Previously missing from our model—critical oversight.",
+        "factors": {
+          "streaming": 42,
+          "concert": 95,
+          "sbSuitability": 80,
+          "cultural": 65,
+          "albumPush": 90
+        }
+      },
+      {
+        "rank": 4,
+        "song": "DtMF",
+        "album": "DeBÍ TiRAR MáS FOToS",
+        "probability": 0.10,
+        "confidence": "medium",
+        "reasoning": "Biggest current hit (#2 Hot 100); AOTY Grammy win. BUT emotional mid-tempo—atypical opener energy. Performed as 2nd song at SNL50 Homecoming, never as opener. More likely as emotional peak mid-set.",
+        "factors": {
+          "streaming": 78,
+          "concert": 45,
+          "sbSuitability": 60,
+          "cultural": 95,
+          "albumPush": 90
         }
       },
       {
         "rank": 5,
-        "song": "MONACO",
-        "album": "Nadie Sabe Lo Que Va a Pasar Mañana",
-        "probability": 0.10,
-        "confidence": "medium",
-        "reasoning": "High energy; broadcast-clean; #5 Hot 100 peak. But lacks historic weight for this cultural moment and not from current album cycle.",
+        "song": "El Clúb",
+        "album": "DeBÍ TiRAR MáS FOToS",
+        "probability": 0.08,
+        "confidence": "low",
+        "reasoning": "Lead single; house/EDM stadium energy; clean. But never used as opener in any documented special performance.",
         "factors": {
-          "streaming": 58,
-          "concert": 82,
-          "sbSuitability": 78,
-          "cultural": 55,
-          "albumPush": 45
+          "streaming": 45,
+          "concert": 48,
+          "sbSuitability": 82,
+          "cultural": 68,
+          "albumPush": 88
         }
       },
       {
         "rank": 6,
+        "song": "BAILE INoLVIDABLE",
+        "album": "DeBÍ TiRAR MáS FOToS",
+        "probability": 0.05,
+        "confidence": "low",
+        "reasoning": "Apple Music trailer featured this song. Opened SNL50 Homecoming (Feb 2025). But trailer evidence + salsa structure point more strongly to CLOSER than opener. Model has it at 60% for last song.",
+        "factors": {
+          "streaming": 55,
+          "concert": 65,
+          "sbSuitability": 85,
+          "cultural": 90,
+          "albumPush": 95
+        }
+      },
+      {
+        "rank": 7,
         "song": "DÁKITI",
         "album": "El Último Tour Del Mundo",
-        "probability": 0.07,
+        "probability": 0.04,
         "confidence": "low",
-        "reasoning": "#1 all-time streams (2.3B); universally recognizable; very clean and catchy. But from 2020—not current album cycle, and typically used mid-set or as closer rather than opener.",
+        "reasoning": "#1 all-time streams (2.3B) but from 2020. SB pattern: nobody opens with their biggest hit. Never used as special performance opener.",
         "factors": {
           "streaming": 100,
-          "concert": 40,
+          "concert": 30,
           "sbSuitability": 88,
           "cultural": 70,
           "albumPush": 5
+        }
+      },
+      {
+        "rank": 8,
+        "song": "El Apagón",
+        "album": "Un Verano Sin Ti",
+        "probability": 0.03,
+        "confidence": "low",
+        "reasoning": "Opened the 2023 Grammy Awards ceremony—proves he'll use it for major cultural statements. Puerto Rican blackout/political song. But UVST era, not current.",
+        "factors": {
+          "streaming": 40,
+          "concert": 50,
+          "sbSuitability": 70,
+          "cultural": 98,
+          "albumPush": 10
         }
       }
     ],
     "marketInefficiency": {
       "mostOverpriced": {
         "song": "NuevaYol",
-        "ourProbability": 0.20,
+        "ourProbability": 0.25,
         "marketProbability": 0.56,
         "platform": "Kalshi",
         "marketType": "first_song",
-        "edge": -0.36,
+        "edge": -0.31,
         "recommendation": "BUY_NO",
         "confidence": "very_high"
       },
       "mostUnderpriced": {
-        "song": "Tití Me Preguntó",
-        "ourProbability": 0.25,
-        "marketProbability": 0.26,
+        "song": "La Mudanza",
+        "ourProbability": 0.15,
+        "marketProbability": 0.21,
         "platform": "Kalshi",
         "marketType": "first_song",
-        "edge": -0.01,
-        "recommendation": "HOLD",
-        "confidence": "low"
+        "edge": -0.06,
+        "recommendation": "BUY_NO",
+        "confidence": "high"
       }
     }
   },
@@ -287,7 +317,7 @@
     "songTiers": {
       "locks": ["DÁKITI", "BAILE INoLVIDABLE"],
       "veryLikely": ["Me Porto Bonito", "Yo Perreo Sola", "DtMF"],
-      "likely": ["Tití Me Preguntó", "NuevaYol", "El Clúb"],
+      "likely": ["Tití Me Preguntó", "NuevaYol", "El Clúb", "La Mudanza"],
       "possible": ["I Like It", "MONACO", "El Apagón", "La Santa"],
       "unlikely": ["Safaera", "Ojitos Lindos", "Yonaguni", "Callaíta", "MÍA"]
     }
@@ -357,11 +387,11 @@
     "highConviction": [
       {
         "song": "NuevaYol",
-        "ourProbability": 0.20,
+        "ourProbability": 0.25,
         "marketProbability": 0.56,
         "platform": "Kalshi",
         "marketType": "first_song",
-        "edge": -0.36,
+        "edge": -0.31,
         "recommendation": "BUY_NO",
         "confidence": "very_high"
       },
@@ -383,7 +413,7 @@
         "marketType": "guest_performer",
         "edge": -0.16,
         "recommendation": "BUY_NO",
-        "confidence": "high"
+        "confidence": "very_high"
       }
     ],
     "valuePlays": [
@@ -398,12 +428,12 @@
         "confidence": "medium"
       },
       {
-        "song": "La MuDANZA",
-        "ourProbability": 0.05,
-        "marketProbability": 0.21,
+        "song": "Tití Me Preguntó",
+        "ourProbability": 0.20,
+        "marketProbability": 0.26,
         "platform": "Kalshi",
         "marketType": "first_song",
-        "edge": -0.16,
+        "edge": -0.06,
         "recommendation": "BUY_NO",
         "confidence": "high"
       }
@@ -413,7 +443,7 @@
       "kalshiImplied": 0.56,
       "otherImplied": 0.52,
       "spread": 0.04,
-      "recommendation": "BUY NO on Kalshi — model fair value is 20%"
+      "recommendation": "BUY NO on Kalshi — model fair value is 25%"
     }
   },
 
@@ -435,7 +465,13 @@
     {
       "date": "2026-02-02",
       "version": "2.2.0",
-      "changes": "Full model recalibration: fixed factor-probability inversion (DtMF factors were highest but prob lowest); added DÁKITI to first_song candidates; fixed probability sums to 1.0; reduced Cardi B from 75% to 55% (Latin-focused show); reduced JLo from 30% to 20%; added JLo+Cardi B to high-conviction BUY_NO; fixed edge threshold asymmetry; promoted Chencho to #1 guest",
+      "changes": "Fixed factor-probability inversion; added DÁKITI; fixed probability sums; reduced Cardi B/JLo; fixed edge threshold asymmetry",
+      "author": "model_engine"
+    },
+    {
+      "date": "2026-02-02",
+      "version": "2.2.1",
+      "changes": "Major recalibration from special performance research: NuevaYol promoted to #1 first_song (25%) based on Fallon+SNL opener pattern; Tití demoted to #2 (20%)—hasn't opened a special since 2023; La Mudanza added at #3 (15%)—current DtMF tour opener was missing entirely; added BAILE INoLVIDABLE+El Apagón as first_song candidates; expanded to 8 candidates",
       "author": "model_engine"
     }
   ],
@@ -452,9 +488,11 @@
     "dataSources": [
       "Spotify streaming data (82.7M monthly listeners, 112B career streams)",
       "setlist.fm (127+ documented shows)",
-      "Super Bowl halftime archives 2002-2024",
+      "Super Bowl halftime opener analysis 2016-2025 (10 shows catalogued)",
+      "Bad Bunny special performance opener history (Coachella, SNL x4, Fallon, Grammys, VMAs, Amazon, Latin Grammys, DtMF Tour)",
       "Billboard chart history",
-      "Latin Grammy / Grammy awards data"
+      "Latin Grammy / Grammy awards data",
+      "Apple Music SB LX halftime trailer (Jan 2026)"
     ],
     "marketUsage": "Markets (Kalshi, Polymarket) are used ONLY for edge calculation, never as probability input"
   }
