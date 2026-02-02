@@ -103,26 +103,19 @@ export function calculateEdge(
   let recommendation: EdgeCalculation['recommendation'];
   let confidence: EdgeCalculation['confidence'];
 
-  if (edge > 0.15) {
-    recommendation = 'BUY_YES';
-    confidence = 'very_high';
-  } else if (edge > 0.05) {
-    recommendation = 'BUY_YES';
-    confidence = 'high';
-  } else if (edge > 0.02) {
-    recommendation = 'BUY_YES';
-    confidence = 'medium';
-  } else if (edge > -0.02) {
+  const absEdge = Math.abs(edge);
+
+  if (absEdge <= 0.02) {
     recommendation = 'HOLD';
     confidence = 'low';
-  } else if (edge > -0.10) {
-    recommendation = 'BUY_NO';
+  } else if (absEdge <= 0.05) {
+    recommendation = edge > 0 ? 'BUY_YES' : 'BUY_NO';
     confidence = 'medium';
-  } else if (edge > -0.20) {
-    recommendation = 'BUY_NO';
+  } else if (absEdge <= 0.15) {
+    recommendation = edge > 0 ? 'BUY_YES' : 'BUY_NO';
     confidence = 'high';
   } else {
-    recommendation = 'BUY_NO';
+    recommendation = edge > 0 ? 'BUY_YES' : 'BUY_NO';
     confidence = 'very_high';
   }
 

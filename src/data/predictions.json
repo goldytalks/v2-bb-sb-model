@@ -1,12 +1,12 @@
 {
   "meta": {
-    "version": "2.1.0",
-    "lastUpdated": "2026-01-30T12:00:00Z",
-    "lastCalibration": "2026-01-30T12:00:00Z",
+    "version": "2.2.0",
+    "lastUpdated": "2026-02-02T12:00:00Z",
+    "lastCalibration": "2026-02-02T12:00:00Z",
     "dataSourcesUpdated": {
-      "streaming": "2026-01-30",
-      "concerts": "2026-01-30",
-      "markets": "2026-01-30"
+      "streaming": "2026-02-02",
+      "concerts": "2026-02-02",
+      "markets": "2026-02-02"
     },
     "confidence": 0.72,
     "event": {
@@ -25,15 +25,15 @@
         "rank": 1,
         "song": "Tití Me Preguntó",
         "album": "Un Verano Sin Ti",
-        "probability": 0.28,
+        "probability": 0.25,
         "confidence": "high",
-        "reasoning": "Proven Coachella 2023 opener over tour single; 1.89B streams; instant stadium-wide singalong trigger; matches Super Bowl pattern (73% open with top-5 recognizable song)",
+        "reasoning": "Proven Coachella 2023 opener; 1.89B streams; instant stadium singalong; matches SB pattern (73% open with top-5 recognizable hit). Not current album but still his go-to opener.",
         "factors": {
-          "streaming": 90,
-          "concert": 95,
+          "streaming": 92,
+          "concert": 98,
           "sbSuitability": 90,
           "cultural": 85,
-          "albumPush": 40
+          "albumPush": 50
         }
       },
       {
@@ -42,58 +42,73 @@
         "album": "DeBÍ TiRAR MáS FOToS",
         "probability": 0.20,
         "confidence": "medium",
-        "reasoning": "Cultural statement (Puerto Rican flag video); current album; but NOT in top-20 all-time streams; no stadium opener track record",
+        "reasoning": "Cultural statement (Puerto Rican flag video); current album lead push; but only ~400M streams (not top-20 all-time); limited stadium opener precedent. Market favorite at 56% is overpriced.",
         "factors": {
-          "streaming": 70,
-          "concert": 80,
-          "sbSuitability": 90,
-          "cultural": 90,
-          "albumPush": 100
+          "streaming": 50,
+          "concert": 68,
+          "sbSuitability": 86,
+          "cultural": 92,
+          "albumPush": 98
         }
       },
       {
         "rank": 3,
-        "song": "El Clúb",
+        "song": "DtMF",
         "album": "DeBÍ TiRAR MáS FOToS",
-        "probability": 0.16,
+        "probability": 0.15,
         "confidence": "medium",
-        "reasoning": "Lead single from current album; house/EDM production translates to stadium; clean; political undertones",
+        "reasoning": "Biggest current hit (#2 Hot 100); historic Grammy noms (ROTY/SOTY/AOTY); massive cultural moment. BUT emotional mid-tempo ballad—atypical opener energy. More likely as emotional peak mid-set.",
         "factors": {
-          "streaming": 65,
-          "concert": 75,
-          "sbSuitability": 85,
-          "cultural": 75,
-          "albumPush": 100
+          "streaming": 78,
+          "concert": 45,
+          "sbSuitability": 60,
+          "cultural": 95,
+          "albumPush": 98
         }
       },
       {
         "rank": 4,
-        "song": "MONACO",
-        "album": "Nadie Sabe Lo Que Va a Pasar Mañana",
-        "probability": 0.14,
+        "song": "El Clúb",
+        "album": "DeBÍ TiRAR MáS FOToS",
+        "probability": 0.13,
         "confidence": "medium",
-        "reasoning": "High energy; broadcast-clean; #5 Hot 100 peak; but lacks historic weight for this moment",
+        "reasoning": "Lead single from current album; house/EDM production translates to stadium energy; clean; political undertones. Lower streams than competitors.",
         "factors": {
-          "streaming": 65,
-          "concert": 85,
-          "sbSuitability": 80,
-          "cultural": 60,
-          "albumPush": 60
+          "streaming": 45,
+          "concert": 60,
+          "sbSuitability": 82,
+          "cultural": 70,
+          "albumPush": 95
         }
       },
       {
         "rank": 5,
-        "song": "DtMF",
-        "album": "DeBÍ TiRAR MáS FOToS",
-        "probability": 0.12,
+        "song": "MONACO",
+        "album": "Nadie Sabe Lo Que Va a Pasar Mañana",
+        "probability": 0.10,
         "confidence": "medium",
-        "reasoning": "Biggest current hit (#2 Hot 100); historic Grammy nominations (ROTY/SOTY/AOTY); but emotional mid-tempo—atypical opener energy",
+        "reasoning": "High energy; broadcast-clean; #5 Hot 100 peak. But lacks historic weight for this cultural moment and not from current album cycle.",
         "factors": {
-          "streaming": 80,
-          "concert": 85,
-          "sbSuitability": 90,
-          "cultural": 95,
-          "albumPush": 100
+          "streaming": 58,
+          "concert": 82,
+          "sbSuitability": 78,
+          "cultural": 55,
+          "albumPush": 45
+        }
+      },
+      {
+        "rank": 6,
+        "song": "DÁKITI",
+        "album": "El Último Tour Del Mundo",
+        "probability": 0.07,
+        "confidence": "low",
+        "reasoning": "#1 all-time streams (2.3B); universally recognizable; very clean and catchy. But from 2020—not current album cycle, and typically used mid-set or as closer rather than opener.",
+        "factors": {
+          "streaming": 100,
+          "concert": 40,
+          "sbSuitability": 88,
+          "cultural": 70,
+          "albumPush": 5
         }
       }
     ],
@@ -110,11 +125,11 @@
       },
       "mostUnderpriced": {
         "song": "Tití Me Preguntó",
-        "ourProbability": 0.28,
+        "ourProbability": 0.25,
         "marketProbability": 0.26,
         "platform": "Kalshi",
         "marketType": "first_song",
-        "edge": 0.02,
+        "edge": -0.01,
         "recommendation": "HOLD",
         "confidence": "low"
       }
@@ -127,9 +142,9 @@
         "rank": 1,
         "song": "BAILE INoLVIDABLE",
         "album": "DeBÍ TiRAR MáS FOToS",
-        "probability": 0.65,
+        "probability": 0.60,
         "confidence": "very_high",
-        "reasoning": "Featured in Apple Music trailer; 2025 Latin Grammy wins; 6-minute salsa structure built for finale; closed Puerto Rico residency",
+        "reasoning": "Featured in Apple Music trailer; 2025 Latin Grammy wins; 6-minute salsa structure built for finale; closed Puerto Rico residency. Strong evidence trail.",
         "factors": {
           "streaming": 75,
           "concert": 90,
@@ -142,13 +157,13 @@
         "rank": 2,
         "song": "DtMF",
         "album": "DeBÍ TiRAR MáS FOToS",
-        "probability": 0.15,
+        "probability": 0.18,
         "confidence": "medium",
-        "reasoning": "Emotional anchor; Grammy positioning; but trailer evidence points to BAILE",
+        "reasoning": "Emotional anchor; Grammy positioning (ROTY/SOTY/AOTY noms); could close as triumphant moment. But trailer evidence points to BAILE.",
         "factors": {
           "streaming": 80,
-          "concert": 85,
-          "sbSuitability": 90,
+          "concert": 75,
+          "sbSuitability": 88,
           "cultural": 95,
           "albumPush": 100
         }
@@ -159,12 +174,27 @@
         "album": "El Último Tour Del Mundo",
         "probability": 0.12,
         "confidence": "medium",
-        "reasoning": "#1 all-time streams; traditional concert closer; but new album promotional logic likely supersedes",
+        "reasoning": "#1 all-time streams; traditional concert closer; universally recognized send-off. But new album promotional logic likely supersedes.",
         "factors": {
           "streaming": 100,
           "concert": 85,
           "sbSuitability": 100,
           "cultural": 75,
+          "albumPush": 20
+        }
+      },
+      {
+        "rank": 4,
+        "song": "Yo Perreo Sola",
+        "album": "YHLQMDLG",
+        "probability": 0.10,
+        "confidence": "low",
+        "reasoning": "High-energy crowd anthem; empowerment message fits big finale energy. But more likely mid-set than actual closer.",
+        "factors": {
+          "streaming": 85,
+          "concert": 80,
+          "sbSuitability": 85,
+          "cultural": 90,
           "albumPush": 20
         }
       }
@@ -207,7 +237,7 @@
         "runtime": "1:30",
         "guest": "Cardi B",
         "function": "guest_feature",
-        "inclusionProbability": 0.70
+        "inclusionProbability": 0.55
       },
       {
         "position": 5,
@@ -257,59 +287,59 @@
     "songTiers": {
       "locks": ["DÁKITI", "BAILE INoLVIDABLE"],
       "veryLikely": ["Me Porto Bonito", "Yo Perreo Sola", "DtMF"],
-      "likely": ["Tití Me Preguntó", "NuevaYol"],
-      "possible": ["I Like It", "MONACO", "El Apagón"],
-      "unlikely": ["Safaera", "Ojitos Lindos", "Yonaguni", "Callaíta"]
+      "likely": ["Tití Me Preguntó", "NuevaYol", "El Clúb"],
+      "possible": ["I Like It", "MONACO", "El Apagón", "La Santa"],
+      "unlikely": ["Safaera", "Ojitos Lindos", "Yonaguni", "Callaíta", "MÍA"]
     }
   },
 
   "guests": [
     {
+      "name": "Chencho Corleone",
+      "probability": 0.70,
+      "associatedSong": "Me Porto Bonito",
+      "marketOdds": null,
+      "reasoning": "Easiest add—already tours with BB; original feature on his biggest collab; no scheduling conflicts; low-risk high-reward cameo"
+    },
+    {
       "name": "Cardi B",
-      "probability": 0.75,
+      "probability": 0.55,
       "associatedSong": "I Like It",
       "marketOdds": {
         "platform": "Kalshi",
         "impliedProbability": 0.71
       },
-      "reasoning": "His only #1 hit; she's box office; cross-cultural appeal; prior Super Bowl experience"
-    },
-    {
-      "name": "Chencho Corleone",
-      "probability": 0.65,
-      "associatedSong": "Me Porto Bonito",
-      "marketOdds": null,
-      "reasoning": "Easy add; already tours with BB; original feature; no scheduling conflicts"
+      "reasoning": "I Like It is his only #1 Hot 100; she's box office. BUT: this show is a Latin cultural statement, not a pop crossover set. BB may prioritize Latin artists. Also requires J Balvin or reworked arrangement. Market at 71% is overpriced."
     },
     {
       "name": "J Balvin",
-      "probability": 0.45,
+      "probability": 0.40,
       "associatedSong": "I Like It",
       "marketOdds": {
         "platform": "Kalshi",
         "impliedProbability": 0.55
       },
-      "reasoning": "I Like It connection; prior Super Bowl 2020; scheduling uncertain"
-    },
-    {
-      "name": "Jennifer Lopez",
-      "probability": 0.30,
-      "associatedSong": null,
-      "marketOdds": {
-        "platform": "Polymarket",
-        "impliedProbability": 0.45
-      },
-      "reasoning": "Puerto Rican connection; 2020 SB precedent; but not an active collaborator"
+      "reasoning": "I Like It connection; prior Super Bowl 2020 experience. But only makes sense if I Like It is performed; scheduling uncertain."
     },
     {
       "name": "Daddy Yankee",
-      "probability": 0.25,
+      "probability": 0.30,
       "associatedSong": "La Santa",
       "marketOdds": {
         "platform": "Kalshi",
         "impliedProbability": 0.30
       },
-      "reasoning": "La Santa requires him; but he's 'retired'; scheduling risk"
+      "reasoning": "La Santa collab exists; massive cultural icon; Puerto Rican solidarity angle. But officially 'retired'—would need to come out of retirement for this."
+    },
+    {
+      "name": "Jennifer Lopez",
+      "probability": 0.20,
+      "associatedSong": null,
+      "marketOdds": {
+        "platform": "Polymarket",
+        "impliedProbability": 0.45
+      },
+      "reasoning": "Puerto Rican connection; 2020 SB precedent. But NOT an active collaborator with BB—no shared tracks. Market at 45% is significantly overpriced. Would be a symbolic cameo only."
     },
     {
       "name": "Drake",
@@ -336,14 +366,24 @@
         "confidence": "very_high"
       },
       {
-        "song": "Tití Me Preguntó",
-        "ourProbability": 0.28,
-        "marketProbability": 0.26,
+        "song": "Jennifer Lopez",
+        "ourProbability": 0.20,
+        "marketProbability": 0.45,
+        "platform": "Polymarket",
+        "marketType": "guest_performer",
+        "edge": -0.25,
+        "recommendation": "BUY_NO",
+        "confidence": "very_high"
+      },
+      {
+        "song": "Cardi B",
+        "ourProbability": 0.55,
+        "marketProbability": 0.71,
         "platform": "Kalshi",
-        "marketType": "first_song",
-        "edge": 0.02,
-        "recommendation": "HOLD",
-        "confidence": "low"
+        "marketType": "guest_performer",
+        "edge": -0.16,
+        "recommendation": "BUY_NO",
+        "confidence": "high"
       }
     ],
     "valuePlays": [
@@ -390,6 +430,12 @@
       "date": "2026-01-30",
       "version": "2.1.0",
       "changes": "Removed FanDuel; added Polymarket songs_played; BUY YES/BUY NO terminology; Kalshi portfolio integration",
+      "author": "model_engine"
+    },
+    {
+      "date": "2026-02-02",
+      "version": "2.2.0",
+      "changes": "Full model recalibration: fixed factor-probability inversion (DtMF factors were highest but prob lowest); added DÁKITI to first_song candidates; fixed probability sums to 1.0; reduced Cardi B from 75% to 55% (Latin-focused show); reduced JLo from 30% to 20%; added JLo+Cardi B to high-conviction BUY_NO; fixed edge threshold asymmetry; promoted Chencho to #1 guest",
       "author": "model_engine"
     }
   ],
